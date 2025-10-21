@@ -20,7 +20,7 @@
     "roast"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "axios": "^1.6.5",
     "discord.js": "^14.14.1",
