@@ -88,7 +88,7 @@ class MatchTracker {
    * Start the automatic tracking interval
    */
   startTracking() {
-    console.log(`Starting match tracker - checking every 1 hour`);
+    console.log('Starting match tracker - checking every 1 hour');
 
     // Run initial check
     this.checkAllUsers();
@@ -339,7 +339,9 @@ class MatchTracker {
    */
   getRankDisplay(profileData) {
     const csRating = profileData.cs_rating;
-    if (!csRating) return 'Unranked';
+    if (!csRating) {
+      return 'Unranked';
+    }
 
     const rank = csRating.rank_name || 'Unknown';
     const rating = csRating.rating || 0;
