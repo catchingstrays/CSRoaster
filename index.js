@@ -26,7 +26,7 @@ client.commands.set('setup', setupCommand);
 
 client.once('clientReady', () => {
   console.log(`Logged in as ${client.user.tag}`);
-  console.log(`Bot is ready to roast some CS2 players!`);
+  console.log('Bot is ready to roast some CS2 players!');
   client.user.setActivity('CS2 players', { type: 'WATCHING' });
 
   // Initialize and start automatic match tracking
@@ -36,17 +36,23 @@ client.once('clientReady', () => {
 
 client.on('messageCreate', async (message) => {
   // Ignore bot messages
-  if (message.author.bot) return;
+  if (message.author.bot) {
+    return;
+  }
 
   // Check if message starts with prefix
-  if (!message.content.startsWith(config.prefix)) return;
+  if (!message.content.startsWith(config.prefix)) {
+    return;
+  }
 
   const args = message.content.slice(config.prefix.length).trim().split(/ +/);
   const commandName = args.shift().toLowerCase();
 
   const command = client.commands.get(commandName);
 
-  if (!command) return;
+  if (!command) {
+    return;
+  }
 
   try {
     await command.execute(message, args);
@@ -65,7 +71,7 @@ client.on('guildCreate', async (guild) => {
     const channels = await guild.channels.fetch();
     const textChannel = channels.find(
       channel => channel.isTextBased() &&
-                 channel.permissionsFor(guild.members.me).has('SendMessages')
+                 channel.permissionsFor(guild.members.me).has('SendMessages'),
     );
 
     if (!textChannel) {
@@ -82,23 +88,23 @@ client.on('guildCreate', async (guild) => {
         {
           name: 'Step 1: Setup',
           value: `An admin needs to run \`${config.prefix}setup <#channel>\` to set the channel where roasts will be posted.\n` +
-                 `Example: \`${config.prefix}setup #roasts\``
+                 `Example: \`${config.prefix}setup #roasts\``,
         },
         {
           name: 'Step 2: Link Accounts',
           value: `Users can link their Steam accounts using \`${config.prefix}link <steam64_id>\`\n` +
-                 `Find your Steam64 ID at: https://steamid.io/`
+                 'Find your Steam64 ID at: https://steamid.io/',
         },
         {
           name: 'Step 3: Get Roasted!',
-          value: 'After linking, when you finish a CS2 match, your stats will be automatically analyzed and roasted in the configured channel!'
+          value: 'After linking, when you finish a CS2 match, your stats will be automatically analyzed and roasted in the configured channel!',
         },
         {
           name: 'Other Commands',
           value: `\`${config.prefix}stats [@user]\` - View stored stats\n` +
                  `\`${config.prefix}tracker status\` - View tracker status\n` +
-                 `\`${config.prefix}setup status\` - View current setup`
-        }
+                 `\`${config.prefix}setup status\` - View current setup`,
+        },
       );
 
     await textChannel.send({ embeds: [embed] });

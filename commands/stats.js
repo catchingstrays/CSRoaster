@@ -68,14 +68,14 @@ module.exports = {
                  `Spray Accuracy: ${stats.sprayAccuracy.toFixed(1)}%\n` +
                  `Preaim: ${stats.preaim.toFixed(1)}°\n` +
                  `Reaction Time: ${stats.reactionTime.toFixed(0)}ms`,
-          inline: false
+          inline: false,
         },
         {
           name: 'Game Sense',
           value: `Positioning: ${stats.positioningRating.toFixed(1)}\n` +
                  `Utility: ${stats.utilityRating.toFixed(1)}\n` +
                  `Counter Strafing Good Shots Ratio: ${stats.counterStrafing.toFixed(1)}%`,
-          inline: false
+          inline: false,
         },
         {
           name: 'Performance',
@@ -84,20 +84,20 @@ module.exports = {
                  `Opening: ${stats.openingDeviation >= 0 ? '+' : ''}${stats.openingDeviation.toFixed(2)}\n` +
                  `CT Leetify: ${stats.ctLeetifyDeviation >= 0 ? '+' : ''}${stats.ctLeetifyDeviation.toFixed(2)}\n` +
                  `T Leetify: ${stats.tLeetifyDeviation >= 0 ? '+' : ''}${stats.tLeetifyDeviation.toFixed(2)}`,
-          inline: false
+          inline: false,
         },
         {
           name: 'Team Play',
           value: `Trade Kills Success Percentage: ${stats.tradeKillsSuccessPercentage.toFixed(1)}%\n` +
                  `Flashbang Hit Foe Per Flashbang: ${stats.flashbangHitFoePerFlashbang.toFixed(2)}\n` +
                  `Flashbang Hit Friend Per Flashbang: ${stats.flashbangHitFriendPerFlashbang.toFixed(2)}`,
-          inline: false
+          inline: false,
         },
         {
           name: '\u200b',
           value: `**[View on Leetify](https://leetify.com/app/profile/${steam64Id})**`,
-          inline: false
-        }
+          inline: false,
+        },
       );
 
     message.reply({ embeds: [embed] });

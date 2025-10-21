@@ -19,7 +19,7 @@ module.exports = {
         .setDescription('This server needs to be configured before users can link their accounts!')
         .addFields({
           name: 'Setup Required',
-          value: 'An admin needs to run `!setup <#channel>` to set the roast channel first.'
+          value: 'An admin needs to run `!setup <#channel>` to set the roast channel first.',
         });
       return message.reply({ embeds: [embed] });
     }
@@ -41,7 +41,7 @@ module.exports = {
           { name: 'Example', value: isAdmin
             ? '`!link 76561198123456789`\n`!link @JohnDoe 76561198123456789`'
             : '`!link 76561198123456789`' },
-          { name: 'Find your Steam64 ID', value: '[steamid.io](https://steamid.io/)' }
+          { name: 'Find your Steam64 ID', value: '[steamid.io](https://steamid.io/)' },
         );
       return message.reply({ embeds: [embed] });
     }
@@ -184,7 +184,7 @@ module.exports = {
         .addFields(
           { name: 'Player', value: playerName },
           { name: 'Matches Tracked', value: currentMatchCount.toString() },
-          { name: 'Status', value: 'Initial roast sent! Automatic tracking is now active.' }
+          { name: 'Status', value: 'Initial roast sent! Automatic tracking is now active.' },
         );
       await linkMsg.edit({ embeds: [successEmbed] });
 
@@ -197,7 +197,7 @@ module.exports = {
         .setDescription(`Successfully linked ${targetUser} to Steam64 ID: \`${steam64Id}\``)
         .addFields(
           { name: 'Error', value: error.message },
-          { name: 'Status', value: 'Automatic tracking will start on next check cycle.' }
+          { name: 'Status', value: 'Automatic tracking will start on next check cycle.' },
         );
       await linkMsg.edit({ embeds: [errorEmbed] });
     }

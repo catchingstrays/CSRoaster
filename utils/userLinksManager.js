@@ -90,7 +90,7 @@ function unlinkUserFromGuild(discordUserId, guildId) {
 
   // Remove guild from user's guilds array
   userLinks[discordUserId].guilds = userLinks[discordUserId].guilds.filter(
-    id => id !== guildId
+    id => id !== guildId,
   );
 
   // If user has no more guilds, delete the entire user entry

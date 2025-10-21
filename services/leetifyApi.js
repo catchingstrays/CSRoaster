@@ -100,7 +100,7 @@ class LeetifyAPI {
     }
 
     // If it's a Steam profile URL
-    const urlMatch = input.match(/steamcommunity\.com\/(?:profiles\/|id\/)([^\/]+)/);
+    const urlMatch = input.match(/steamcommunity\.com\/(?:profiles\/|id\/)([^/]+)/);
     if (urlMatch) {
       const identifier = urlMatch[1];
       // If the URL contains a Steam64 ID
@@ -110,7 +110,7 @@ class LeetifyAPI {
       // For custom URLs, we can't convert without additional API calls
       throw new Error(
         'Custom Steam URLs are not supported. Please provide a Steam64 ID (17 digits) instead.\n' +
-        'You can find your Steam64 ID at: https://steamid.io/'
+        'You can find your Steam64 ID at: https://steamid.io/',
       );
     }
 
@@ -143,21 +143,21 @@ class LeetifyAPI {
       const message = error.response.data?.message || error.response.data?.error;
 
       switch (status) {
-        case 404:
-          return new Error(
-            `Player not found. Make sure you're using a valid Steam64 ID.\n` +
-            `Find your Steam64 ID at: https://steamid.io/\n` +
-            `Note: The player must have their Steam account linked to Leetify and have played CS2 matches.`
-          );
-        case 429:
-          return new Error(`Rate limited! Too many requests. Try again in a moment.`);
-        case 401:
-        case 403:
-          return new Error(`Invalid API key. Please check your Leetify API key configuration.`);
-        case 400:
-          return new Error(`Invalid request: ${message || 'Bad parameters'}`);
-        default:
-          return new Error(`Error ${action}: ${message || 'Unknown error (HTTP ' + status + ')'}`);
+      case 404:
+        return new Error(
+          'Player not found. Make sure you\'re using a valid Steam64 ID.\n' +
+            'Find your Steam64 ID at: https://steamid.io/\n' +
+            'Note: The player must have their Steam account linked to Leetify and have played CS2 matches.',
+        );
+      case 429:
+        return new Error('Rate limited! Too many requests. Try again in a moment.');
+      case 401:
+      case 403:
+        return new Error('Invalid API key. Please check your Leetify API key configuration.');
+      case 400:
+        return new Error(`Invalid request: ${message || 'Bad parameters'}`);
+      default:
+        return new Error(`Error ${action}: ${message || 'Unknown error (HTTP ' + status + ')'}`);
       }
     }
     return new Error(`Network error while ${action}. Please try again later.\nDetails: ${error.message}`);

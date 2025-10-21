@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Data files
+data/*.json
+
+# Git
+.git/
+
+# Logs
+logs/
+*.log
+
+# Build files
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -6,51 +6,51 @@ class CS2RoastGenerator {
     this.roastTemplates = {
       lowKD: [
         "With a K/D like that, I think you're confusing 'Counter-Strike' with 'Counter-Die'.",
-        "Your K/D ratio is so low, the bots feel bad for you.",
+        'Your K/D ratio is so low, the bots feel bad for you.',
         "I've seen Silver 1s with better K/D ratios. And they play with a trackpad.",
         "That K/D suggests you're allergic to getting kills but LOVE getting killed.",
       ],
       lowWinRate: [
-        "This win rate is tragic. Have you considered playing against easier opponents... like practice bots?",
-        "With a win rate like that, maybe your team IS the problem... and that problem is YOU.",
+        'This win rate is tragic. Have you considered playing against easier opponents... like practice bots?',
+        'With a win rate like that, maybe your team IS the problem... and that problem is YOU.',
         "You lose so much, I'm surprised Steam hasn't given you a 'Professional Loser' badge.",
-        "That win rate is lower than my expectations, and they were already in the Mariana Trench.",
+        'That win rate is lower than my expectations, and they were already in the Mariana Trench.',
       ],
       lowHeadshotRate: [
         "Headshot percentage so low, I'm starting to think you're aiming at their shoes.",
-        "Are you aware that headshots do MORE damage? Just a friendly tip.",
+        'Are you aware that headshots do MORE damage? Just a friendly tip.',
         "Your crosshair placement is so bad, it could be used as a 'what NOT to do' tutorial.",
         "With aim like that, maybe try a game that doesn't require precision... like Cookie Clicker.",
       ],
       lowAccuracy: [
-        "Your accuracy is so bad, stormtroopers are taking notes.",
-        "Missing that many shots should be physically impossible. Congratulations on defying the odds!",
+        'Your accuracy is so bad, stormtroopers are taking notes.',
+        'Missing that many shots should be physically impossible. Congratulations on defying the odds!',
         "I think you're confusing 'spray pattern' with 'spray and pray... that something hits'.",
-        "At this accuracy rate, you could stand in front of a wall and still miss it.",
+        'At this accuracy rate, you could stand in front of a wall and still miss it.',
       ],
       badUtility: [
         "Your utility usage is so bad, you're basically donating grenades to the enemy economy.",
         "Flash yourself one more time and I'm calling it a self-sabotage strategy.",
-        "Using utilities that poorly should be considered griefing.",
+        'Using utilities that poorly should be considered griefing.',
         "I've seen unranked players use smokes better. At least they TRY to help the team.",
       ],
       poorPositioning: [
-        "Your positioning is so bad, even the enemy team feels bad peeking you.",
-        "Standing in the open like that, are you trying to win or audition for a shooting gallery?",
+        'Your positioning is so bad, even the enemy team feels bad peeking you.',
+        'Standing in the open like that, are you trying to win or audition for a shooting gallery?',
         "Positioning rating that low means you're basically a free kill delivery service.",
-        "You have the game sense of a blind chicken with no spatial awareness.",
+        'You have the game sense of a blind chicken with no spatial awareness.',
       ],
       lowClutch: [
-        "Your clutch rate is so low, your team probably celebrates when you die first.",
-        "In a 1v1, the enemy could AFK and still win against you.",
-        "You choke in clutches harder than a malfunctioning vacuum cleaner.",
+        'Your clutch rate is so low, your team probably celebrates when you die first.',
+        'In a 1v1, the enemy could AFK and still win against you.',
+        'You choke in clutches harder than a malfunctioning vacuum cleaner.',
         "When it comes to clutching, you're about as reliable as a chocolate teapot.",
       ],
       badOpening: [
         "Your opening duel success is abysmal. Entry fragging clearly isn't your calling.",
-        "You die first so often, your team should just start the round 4v5.",
+        'You die first so often, your team should just start the round 4v5.',
         "Getting the first kill? Nah. BEING the first kill? That's your specialty!",
-        "Your opening stats suggest your job is to be target practice.",
+        'Your opening stats suggest your job is to be target practice.',
       ],
       lowRating: [
         "That Leetify rating is so low, I had to double-check it wasn't a typo.",
@@ -61,35 +61,35 @@ class CS2RoastGenerator {
       goodPerformance: [
         "Okay, okay... these stats aren't terrible. You're almost decent! Keep grinding!",
         "Not bad! For once, you're not the anchor dragging your team down.",
-        "These numbers are actually respectable. Did someone else play on your account?",
+        'These numbers are actually respectable. Did someone else play on your account?',
         "Impressive! You're finally pulling your weight. Character development!",
       ],
       bottomFrag: [
-        "Bottom fragging so consistently, they should rename the scoreboard position after you.",
-        "Every team needs someone to carry... the participation trophy. Thanks for volunteering!",
+        'Bottom fragging so consistently, they should rename the scoreboard position after you.',
+        'Every team needs someone to carry... the participation trophy. Thanks for volunteering!',
         "You're not the carry, you're the CARRIED. And even then, you're too heavy.",
         "At least you're consistent... consistently at the bottom of the scoreboard.",
       ],
       badReactionTime: [
         "With reaction times that slow, you'd lose a draw to a sloth.",
-        "Your reaction time is so bad, you see enemies from yesterday.",
-        "By the time you react, the round is already over... and you lost.",
-        "Are you playing on a potato or is your brain just buffering?",
+        'Your reaction time is so bad, you see enemies from yesterday.',
+        'By the time you react, the round is already over... and you lost.',
+        'Are you playing on a potato or is your brain just buffering?',
       ],
       teamFlasher: [
-        "You flash your team more than the enemy. Whose side are you on?",
-        "Your teammates bought sunglasses just to play with you.",
+        'You flash your team more than the enemy. Whose side are you on?',
+        'Your teammates bought sunglasses just to play with you.',
         "That's not 'utility usage', that's just griefing with extra steps.",
-        "Maybe check which color uniform your team is wearing?",
+        'Maybe check which color uniform your team is wearing?',
       ],
       badTrades: [
-        "Your teammates die and you just... watch. Great teamwork!",
-        "Trading kills requires you to actually GET the kill. Just FYI.",
-        "Your team dies for you, and you give them nothing in return. Typical.",
+        'Your teammates die and you just... watch. Great teamwork!',
+        'Trading kills requires you to actually GET the kill. Just FYI.',
+        'Your team dies for you, and you give them nothing in return. Typical.',
         "The concept of 'trading' seems lost on you. This isn't a solo game.",
       ],
       utilityHoarder: [
-        "Dying with full nades every round? Are you collecting them?",
+        'Dying with full nades every round? Are you collecting them?',
         "Those grenades don't get a refund if you die with them, genius.",
         "It's called 'utility' because you're supposed to USE it. Novel concept, I know.",
         "Saving utility for the next match? Because you're not using it in this one.",
@@ -101,7 +101,7 @@ class CS2RoastGenerator {
         "Ever heard of the 'stop' key? It exists for a reason.",
       ],
       poorPreaim: [
-        "Pre-aiming at random walls. Bold strategy, terrible execution.",
+        'Pre-aiming at random walls. Bold strategy, terrible execution.',
         "Your crosshair placement suggests you're playing a different game entirely.",
         "Aiming at the floor won't help unless enemies start crawling.",
         "Do you know where enemies usually peek from? Because your crosshair doesn't.",
@@ -111,94 +111,94 @@ class CS2RoastGenerator {
     // Stat degradation roast templates
     this.degradationRoasts = {
       aimRating: [
-        "Your aim dropped {change} points from {old} to {new}. Did you switch to playing with a steering wheel?",
-        "Aim fell by {change} points ({old} → {new}). Maybe consider aim training... or a new hobby?",
-        "Your aim got WORSE by {change} points? {old} → {new}. That takes special talent.",
-        "Lost {change} aim rating points. Are you devolving as a player?",
+        'Your aim dropped {change} points from {old} to {new}. Did you switch to playing with a steering wheel?',
+        'Aim fell by {change} points ({old} → {new}). Maybe consider aim training... or a new hobby?',
+        'Your aim got WORSE by {change} points? {old} → {new}. That takes special talent.',
+        'Lost {change} aim rating points. Are you devolving as a player?',
       ],
       positioningRating: [
-        "Positioning dropped {change} points from {old} to {new}. Did you forget how to use a map?",
-        "Your game sense degraded by {change} points ({old} → {new}). Impressive in the worst way.",
-        "Positioning fell {change} points. Standing in worse spots than a rookie.",
-        "Down {change} in positioning ({old} → {new}). Are you actively trying to get caught out?",
+        'Positioning dropped {change} points from {old} to {new}. Did you forget how to use a map?',
+        'Your game sense degraded by {change} points ({old} → {new}). Impressive in the worst way.',
+        'Positioning fell {change} points. Standing in worse spots than a rookie.',
+        'Down {change} in positioning ({old} → {new}). Are you actively trying to get caught out?',
       ],
       utilityRating: [
-        "Utility rating dropped {change} points from {old} to {new}. Forgetting which button throws nades?",
-        "Down {change} in utility ({old} → {new}). Even bots use nades better than this.",
+        'Utility rating dropped {change} points from {old} to {new}. Forgetting which button throws nades?',
+        'Down {change} in utility ({old} → {new}). Even bots use nades better than this.',
         "Utility fell {change} points. It's like you're allergic to helping the team.",
-        "Your utility usage dropped {change} points. Did you rebind your grenade keys?",
+        'Your utility usage dropped {change} points. Did you rebind your grenade keys?',
       ],
       headshotRate: [
-        "Headshot % fell {change}% from {old}% to {new}%. Aiming for the knees now?",
-        "Lost {change}% headshot accuracy ({old}% → {new}%). Your crosshair placement is getting WORSE.",
-        "Headshots dropped {change}%. Did you lower your sensitivity to 0.01?",
+        'Headshot % fell {change}% from {old}% to {new}%. Aiming for the knees now?',
+        'Lost {change}% headshot accuracy ({old}% → {new}%). Your crosshair placement is getting WORSE.',
+        'Headshots dropped {change}%. Did you lower your sensitivity to 0.01?',
         "Down {change}% in headshots. At this rate, you'll be shooting the ground next match.",
       ],
       accuracy: [
-        "Accuracy dropped {change}% from {old}% to {new}%. Are you closing your eyes before shooting?",
-        "Your accuracy degraded by {change}%. Impressive bullet wastage!",
-        "Lost {change}% accuracy ({old}% → {new}%). The walls are grateful for all your missed bullets.",
-        "Down {change}% in accuracy. Did you forget how to control recoil?",
+        'Accuracy dropped {change}% from {old}% to {new}%. Are you closing your eyes before shooting?',
+        'Your accuracy degraded by {change}%. Impressive bullet wastage!',
+        'Lost {change}% accuracy ({old}% → {new}%). The walls are grateful for all your missed bullets.',
+        'Down {change}% in accuracy. Did you forget how to control recoil?',
       ],
       sprayAccuracy: [
-        "Spray control fell {change}% from {old}% to {new}%. Just tap instead, please.",
-        "Your spray dropped {change}% ({old}% → {new}%). Is your mouse having a seizure?",
+        'Spray control fell {change}% from {old}% to {new}%. Just tap instead, please.',
+        'Your spray dropped {change}% ({old}% → {new}%). Is your mouse having a seizure?',
         "Spray accuracy down {change}%. You're drawing abstract art on walls now.",
         "Lost {change}% spray control. You've forgotten what spray patterns are.",
       ],
       winRate: [
-        "Win rate dropped {change}% from {old}% to {new}%. Your team must LOVE queueing with you.",
+        'Win rate dropped {change}% from {old}% to {new}%. Your team must LOVE queueing with you.',
         "Down {change}% in wins ({old}% → {new}%). You're not in a slump, you're in a crater.",
         "Win rate fell {change}%. Maybe it's time to admit you're the problem.",
         "Your wins fell {change}%. At this rate, you'll be in the negatives.",
       ],
       clutchDeviation: [
-        "Clutch rating fell {change} from {old} to {new}. Choking more than usual?",
-        "Down {change} in clutch ({old} → {new}). The pressure is clearly too much for you.",
-        "Clutch dropped {change} points. Your 1v1s are becoming participation trophies.",
+        'Clutch rating fell {change} from {old} to {new}. Choking more than usual?',
+        'Down {change} in clutch ({old} → {new}). The pressure is clearly too much for you.',
+        'Clutch dropped {change} points. Your 1v1s are becoming participation trophies.',
         "Your clutch rating fell {change}. Just ff when you're last alive.",
       ],
       openingDeviation: [
         "Opening duels down {change} ({old} → {new}). You're dying first even MORE now.",
         "Lost {change} in opening duels. Stop entry fragging, you're terrible at it.",
         "Opening rating dropped {change}. You're the team's free first blood.",
-        "Down {change} in opening duels. Maybe let someone else peek first?",
+        'Down {change} in opening duels. Maybe let someone else peek first?',
       ],
       reactionTime: [
-        "Reaction time got {change}ms SLOWER ({old}ms → {new}ms). Did you age 20 years?",
-        "Reactions slowed by {change}ms. Are you falling asleep mid-match?",
+        'Reaction time got {change}ms SLOWER ({old}ms → {new}ms). Did you age 20 years?',
+        'Reactions slowed by {change}ms. Are you falling asleep mid-match?',
         "Your reaction time increased {change}ms. You're not reacting, you're spectating.",
-        "Reactions {change}ms slower ({old}ms → {new}ms). Time for coffee?",
+        'Reactions {change}ms slower ({old}ms → {new}ms). Time for coffee?',
       ],
       counterStrafing: [
         "Counter-strafing dropped {change}% ({old}% → {new}%). You forgot the 'counter' part.",
-        "Down {change}% in counter-strafe. Just W key and pray at this point.",
-        "Your movement degraded {change}%. Ice skating simulator?",
-        "Lost {change}% counter-strafe accuracy. Movement mechanics abandoned.",
+        'Down {change}% in counter-strafe. Just W key and pray at this point.',
+        'Your movement degraded {change}%. Ice skating simulator?',
+        'Lost {change}% counter-strafe accuracy. Movement mechanics abandoned.',
       ],
       ctLeetifyDeviation: [
         "CT-side fell {change} ({old} → {new}). Can't even hold angles anymore?",
-        "Your CT performance dropped {change}. Defense is apparently not your thing.",
-        "CT rating down {change}. Maybe just play T-side only?",
-        "Lost {change} on CT. Standing still is too hard for you.",
+        'Your CT performance dropped {change}. Defense is apparently not your thing.',
+        'CT rating down {change}. Maybe just play T-side only?',
+        'Lost {change} on CT. Standing still is too hard for you.',
       ],
       tLeetifyDeviation: [
-        "T-side dropped {change} ({old} → {new}). Attacking is getting worse somehow.",
+        'T-side dropped {change} ({old} → {new}). Attacking is getting worse somehow.',
         "Your T performance fell {change}. Can't even execute a push?",
-        "T-side down {change}. Just lurk in spawn at this point.",
+        'T-side down {change}. Just lurk in spawn at this point.',
         "Lost {change} on T-side. You're making your team 4v5.",
       ],
       preaim: [
-        "Preaim got {change}° worse ({old}° → {new}°). Your crosshair placement is evolving... backwards.",
-        "Preaim increased {change}° ({old}° → {new}°). Are you staring at the floor more now?",
-        "Your preaim degraded {change}°. Crosshair on clouds strategy?",
+        'Preaim got {change}° worse ({old}° → {new}°). Your crosshair placement is evolving... backwards.',
+        'Preaim increased {change}° ({old}° → {new}°). Are you staring at the floor more now?',
+        'Your preaim degraded {change}°. Crosshair on clouds strategy?',
         "Preaim up {change}° (worse). You've forgotten where enemies peek from.",
       ],
       tradeKillsSuccessPercentage: [
-        "Trade success dropped {change}% ({old}% → {new}%). Your teammates die for nothing now.",
+        'Trade success dropped {change}% ({old}% → {new}%). Your teammates die for nothing now.',
         "Down {change}% in trades. You're just watching them die?",
-        "Trade kills fell {change}%. Team play is dead to you.",
-        "Lost {change}% trade success. Solo queue mentality in a team game.",
+        'Trade kills fell {change}%. Team play is dead to you.',
+        'Lost {change}% trade success. Solo queue mentality in a team game.',
       ],
     };
   }
@@ -395,7 +395,9 @@ class CS2RoastGenerator {
       const newValue = newStats[key];
 
       // Skip if either value is missing or 0
-      if (!oldValue || !newValue || oldValue === 0 || newValue === 0) continue;
+      if (!oldValue || !newValue || oldValue === 0 || newValue === 0) {
+        continue;
+      }
 
       // Calculate degradation
       let degradation;
@@ -430,7 +432,9 @@ class CS2RoastGenerator {
    */
   getRandomDegradationRoast(statKey) {
     const roasts = this.degradationRoasts[statKey];
-    if (!roasts || roasts.length === 0) return null;
+    if (!roasts || roasts.length === 0) {
+      return null;
+    }
     return roasts[Math.floor(Math.random() * roasts.length)];
   }
 
@@ -614,7 +618,7 @@ class CS2RoastGenerator {
    * @param {string} steam64Id - Steam64 ID for profile link
    * @returns {string} Formatted roast message
    */
-  formatRoastMessage(playerName, stats, rank, isPrivate = false, discordMention = null, steam64Id = null) {
+  formatRoastMessage(playerName, stats, rank, _isPrivate = false, discordMention = null, steam64Id = null) {
     const roasts = this.generateRoasts(stats);
     // Pick one random roast
     const selectedRoast = roasts[Math.floor(Math.random() * roasts.length)];

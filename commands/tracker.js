@@ -11,24 +11,25 @@ module.exports = {
     const subcommand = args[0]?.toLowerCase() || 'status';
 
     switch (subcommand) {
-      case 'status':
-        await this.showStatus(message);
-        break;
+    case 'status':
+      await this.showStatus(message);
+      break;
 
-      case 'check':
-        await this.manualCheck(message, args);
-        break;
+    case 'check':
+      await this.manualCheck(message, args);
+      break;
 
-      default:
-        const helpEmbed = new EmbedBuilder()
-          .setColor('#ff0000')
-          .setTitle('Unknown Command')
-          .setDescription('Available tracker commands:')
-          .addFields(
-            { name: '!tracker status', value: 'Show tracking status' },
-            { name: '!tracker check [@user]', value: 'Manually check for new matches' }
-          );
-        message.reply({ embeds: [helpEmbed] });
+    default: {
+      const helpEmbed = new EmbedBuilder()
+        .setColor('#ff0000')
+        .setTitle('Unknown Command')
+        .setDescription('Available tracker commands:')
+        .addFields(
+          { name: '!tracker status', value: 'Show tracking status' },
+          { name: '!tracker check [@user]', value: 'Manually check for new matches' },
+        );
+      message.reply({ embeds: [helpEmbed] });
+    }
     }
   },
 
@@ -45,7 +46,7 @@ module.exports = {
         { name: 'Check Interval', value: status.checkInterval, inline: true },
         { name: 'User Cooldown', value: '3 hours after match', inline: true },
         { name: 'Linked Users (This Server)', value: guildUserCount.toString(), inline: true },
-        { name: 'Total Tracked Users (All Servers)', value: status.trackedUserCount.toString(), inline: true }
+        { name: 'Total Tracked Users (All Servers)', value: status.trackedUserCount.toString(), inline: true },
       );
 
     if (guildUserCount > 0) {
@@ -124,7 +125,7 @@ module.exports = {
         .setDescription(`<@${targetUserId}> is on cooldown for ${hours}h ${minutes}m.`)
         .addFields(
           { name: 'Reason', value: 'This prevents spamming the API after a match is detected.' },
-          { name: 'Reset', value: 'Cooldown resets 3 hours after each new match.' }
+          { name: 'Reset', value: 'Cooldown resets 3 hours after each new match.' },
         );
       return message.reply({ embeds: [embed] });
     }

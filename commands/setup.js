@@ -34,7 +34,7 @@ module.exports = {
         .addFields(
           { name: 'Usage', value: '`!setup <#channel>`' },
           { name: 'Example', value: '`!setup #roasts`' },
-          { name: 'Check Status', value: '`!setup status`' }
+          { name: 'Check Status', value: '`!setup status`' },
         );
       return message.reply({ embeds: [embed] });
     }
@@ -48,7 +48,7 @@ module.exports = {
         .setDescription(`I don't have permission to send messages in ${channelMention}!`)
         .addFields({
           name: 'Required Permissions',
-          value: 'I need **Send Messages** permission in that channel.'
+          value: 'I need **Send Messages** permission in that channel.',
         });
       return message.reply({ embeds: [embed] });
     }
@@ -71,7 +71,7 @@ module.exports = {
       .setDescription(`Roast channel has been set to ${channelMention}!`)
       .addFields(
         { name: 'Next Steps', value: 'Users can now use `!link <steam64_id>` to link their accounts.' },
-        { name: 'Automatic Roasts', value: 'When linked users finish a match, roasts will be posted automatically in this channel.' }
+        { name: 'Automatic Roasts', value: 'When linked users finish a match, roasts will be posted automatically in this channel.' },
       );
 
     await message.reply({ embeds: [embed] });
@@ -83,7 +83,7 @@ module.exports = {
       .setDescription('This channel has been configured for automatic roasts!')
       .addFields(
         { name: 'How it works', value: 'When linked players finish CS2 matches, their stats will be analyzed and roasted here.' },
-        { name: 'Get Started', value: 'Use `!link <steam64_id>` to link your Steam account and start getting roasted!' }
+        { name: 'Get Started', value: 'Use `!link <steam64_id>` to link your Steam account and start getting roasted!' },
       );
 
     await channelMention.send({ embeds: [testEmbed] });
@@ -99,7 +99,7 @@ module.exports = {
         .setDescription('This server is not configured yet!')
         .addFields({
           name: 'Setup Required',
-          value: 'Use `!setup <#channel>` to set the roast channel.'
+          value: 'Use `!setup <#channel>` to set the roast channel.',
         });
       return message.reply({ embeds: [embed] });
     }
@@ -113,18 +113,18 @@ module.exports = {
       .addFields(
         {
           name: 'Roast Channel',
-          value: channel ? `${channel}` : `<#${config.roastChannelId}> (channel not found)`
+          value: channel ? `${channel}` : `<#${config.roastChannelId}> (channel not found)`,
         },
         {
           name: 'Setup Date',
-          value: new Date(config.setupAt).toLocaleString()
-        }
+          value: new Date(config.setupAt).toLocaleString(),
+        },
       );
 
     if (config.lastUpdated) {
       embed.addFields({
         name: 'Last Updated',
-        value: new Date(config.lastUpdated).toLocaleString()
+        value: new Date(config.lastUpdated).toLocaleString(),
       });
     }
 
