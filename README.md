@@ -2,6 +2,10 @@
 
 A Discord bot that automatically tracks CS2 players and roasts them based on their match statistics.
 
+## Add to Your Server
+
+**[Add CS2 Roast Bot to Your Discord Server](https://discord.com/oauth2/authorize?scope=bot+applications.commands&client_id=1430077771920441387)**
+
 ## Features
 
 - **Multi-Server Support**: Works across unlimited Discord servers
