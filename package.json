@@ -1,0 +1,25 @@
+{
+  "name": "cs2roaster",
+  "version": "1.0.0",
+  "description": "A Discord bot that roasts Counter-Strike 2 players based on their Leetify statistics",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "counter-strike",
+    "cs2",
+    "leetify",
+    "roast"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.1",
+    "axios": "^1.6.5"
+  }
+}
