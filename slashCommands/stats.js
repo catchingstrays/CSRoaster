@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const matchTracker = require('../services/matchTracker');
-const { getUsersInGuild } = require('../utils/userLinksManager');
+const { getUsersInGuild, getUserSteam64Id } = require('../utils/userLinksManager');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -12,19 +12,50 @@ module.exports = {
         .setDescription('The user to check stats for (defaults to yourself)')
         .setRequired(false)),
 
+  // Mark as user-installable (works in DMs and guilds)
+  userInstallable: true,
+  guildOnly: false,
+
   async execute(interaction) {
+    const isGuildContext = !!interaction.guild;
     const mentionedUser = interaction.options.getUser('user');
     const targetUser = mentionedUser || interaction.user;
+
+    // Universal stats display - works in both DMs and guilds
+    return this.showStats(interaction, targetUser, isGuildContext);
+  },
+
+  async showStats(interaction, targetUser, isGuildContext) {
     const targetUserId = targetUser.id;
+    let steam64Id;
 
-    const guildUsers = getUsersInGuild(interaction.guild.id);
-    const linkData = guildUsers[targetUserId];
+    // Try to get Steam64 ID from guild link first, then global link
+    if (isGuildContext) {
+      const guildUsers = getUsersInGuild(interaction.guild.id);
+      const linkData = guildUsers[targetUserId];
+      if (linkData) {
+        steam64Id = linkData.steam64Id;
+      }
+    }
 
-    if (!linkData) {
+    // Fall back to global link if no guild link found
+    if (!steam64Id) {
+      steam64Id = getUserSteam64Id(targetUserId);
+    }
+
+    if (!steam64Id) {
       const embed = new EmbedBuilder()
         .setColor('#ff0000')
         .setTitle('User Not Linked')
-        .setDescription('This user is not linked in this server! Use `/link` first.');
+        .setDescription(
+          targetUser.id === interaction.user.id
+            ? 'You need to link your account first! Use `/link steam64_id:YOUR_ID`'
+            : `${targetUser.username} is not linked${isGuildContext ? ' in this server' : ''}! They need to use \`/link\` first.`
+        )
+        .addFields({
+          name: 'Find your Steam64 ID',
+          value: '[steamid.io](https://steamid.io/)',
+        });
       return interaction.reply({ embeds: [embed], flags: [MessageFlags.Ephemeral] });
     }
 
@@ -41,7 +72,6 @@ module.exports = {
 
     const stats = trackedData.lastStats;
     const lastChecked = new Date(trackedData.lastChecked).toLocaleString();
-    const steam64Id = linkData.steam64Id;
 
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
@@ -88,6 +118,7 @@ module.exports = {
         },
       );
 
-    interaction.reply({ embeds: [embed], flags: [MessageFlags.Ephemeral] });
+    // Public message (not ephemeral) so everyone can see the stats
+    interaction.reply({ embeds: [embed] });
   },
 };
