@@ -6,6 +6,7 @@ const chatGPTRoastGenerator = require('./chatGPTRoastGenerator');
 const config = require('../config');
 const { loadUserLinks } = require('../utils/userLinksManager');
 const { getGuildConfig } = require('../utils/guildConfigManager');
+const { isDMRoastsEnabled } = require('../utils/userPreferencesManager');
 
 const TRACKER_DATA_PATH = path.join(__dirname, '../data/matchTrackerData.json');
 
@@ -374,15 +375,10 @@ class MatchTracker {
       const userLinks = loadUserLinks();
       const userData = userLinks[discordUserId];
 
-      if (!userData || !userData.guilds || userData.guilds.length === 0) {
-        console.log(`User ${discordUserId} has no guild associations`);
-        return;
-      }
-
       const playerName = profileData.name || 'Unknown Player';
       const currentMatchCount = profileData.total_matches || 0;
 
-      // Generate roast once (cached for all guilds) - ensures same roast for same user
+      // Generate roast once (cached for DM and all guilds) - ensures same roast for same user
       const cacheKey = `${discordUserId}-${Date.now()}`;
       let selectedRoast;
 
@@ -422,8 +418,32 @@ class MatchTracker {
         selectedRoast = this.roastCache[cacheKey];
       }
 
+      // Try to send DM if user has opted in
+      if (isDMRoastsEnabled(discordUserId)) {
+        try {
+          const user = await this.client.users.fetch(discordUserId);
+          const dmChannel = await user.createDM();
+
+          await dmChannel.send({
+            content: `${selectedRoast}\n-# [Data Provided by Leetify](<https://leetify.com/>) • [Steam Profile](<https://steamcommunity.com/profiles/${steam64Id}>)`,
+          });
+
+          console.log(`[DM] Sent roast to ${playerName} via DM`);
+        } catch (error) {
+          console.log(`[DM] Failed to send roast to ${playerName}: ${error.message}`);
+          // Continue to guild notifications even if DM fails
+        }
+      }
+
       // Send roast to each guild where user is linked
       let successCount = 0;
+      const hasGuilds = userData && userData.guilds && userData.guilds.length > 0;
+
+      if (!hasGuilds) {
+        console.log(`User ${discordUserId} has no guild associations (DM-only user)`);
+        return; // Exit if no guilds (DM was already sent above if enabled)
+      }
+
       for (const guildId of userData.guilds) {
         try {
           const guildConfig = getGuildConfig(guildId);
