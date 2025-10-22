@@ -6,8 +6,13 @@ const { loadUserLinks } = require('../utils/userLinksManager');
 const { getGuildConfig } = require('../utils/guildConfigManager');
 
 const TRACKER_DATA_PATH = path.join(__dirname, '../data/matchTrackerData.json');
-const CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour in milliseconds
-const USER_COOLDOWN = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+
+// Load timer configurations from environment variables (with defaults)
+const CHECK_INTERVAL_MINUTES = parseInt(process.env.CHECK_INTERVAL_MINUTES) || 60;
+const USER_COOLDOWN_HOURS = parseInt(process.env.USER_COOLDOWN_HOURS) || 3;
+
+const CHECK_INTERVAL = CHECK_INTERVAL_MINUTES * 60 * 1000; // Convert minutes to milliseconds
+const USER_COOLDOWN = USER_COOLDOWN_HOURS * 60 * 60 * 1000; // Convert hours to milliseconds
 
 class MatchTracker {
   constructor() {
@@ -88,7 +93,7 @@ class MatchTracker {
    * Start the automatic tracking interval
    */
   startTracking() {
-    console.log('Starting match tracker - checking every 1 hour');
+    console.log(`Starting match tracker - checking every ${CHECK_INTERVAL_MINUTES} minute${CHECK_INTERVAL_MINUTES !== 1 ? 's' : ''} (cooldown: ${USER_COOLDOWN_HOURS} hour${USER_COOLDOWN_HOURS !== 1 ? 's' : ''})`);
 
     // Run initial check
     this.checkAllUsers();
