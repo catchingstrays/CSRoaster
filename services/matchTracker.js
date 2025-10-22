@@ -8,8 +8,8 @@ const { getGuildConfig } = require('../utils/guildConfigManager');
 const TRACKER_DATA_PATH = path.join(__dirname, '../data/matchTrackerData.json');
 
 // Load timer configurations from environment variables (with defaults)
-const CHECK_INTERVAL_MINUTES = parseInt(process.env.CHECK_INTERVAL_MINUTES) || 60;
-const USER_COOLDOWN_HOURS = parseInt(process.env.USER_COOLDOWN_HOURS) || 3;
+const CHECK_INTERVAL_MINUTES = parseInt(process.env.CHECK_INTERVAL_MINUTES, 10) || 60;
+const USER_COOLDOWN_HOURS = parseInt(process.env.USER_COOLDOWN_HOURS, 10) || 3;
 
 const CHECK_INTERVAL = CHECK_INTERVAL_MINUTES * 60 * 1000; // Convert minutes to milliseconds
 const USER_COOLDOWN = USER_COOLDOWN_HOURS * 60 * 60 * 1000; // Convert hours to milliseconds
@@ -228,18 +228,20 @@ class MatchTracker {
         // Send roast message with stat comparison
         await this.sendRoastMessage(discordUserId, steam64Id, profileData, currentStats, previousStats);
 
-        // Update tracked data with new stats AND set cooldown
+        // Update tracked data with new stats - NO cooldown (they might play more games)
         this.trackedUsers[discordUserId].lastMatchCount = currentMatchCount;
         this.trackedUsers[discordUserId].lastChecked = new Date().toISOString();
         this.trackedUsers[discordUserId].lastStats = currentStats; // Update stored stats
-        this.trackedUsers[discordUserId].lastMatchUpdate = new Date().toISOString(); // Start 3-hour cooldown
+        this.trackedUsers[discordUserId].lastMatchUpdate = null; // Clear cooldown - they might play another game
         this.saveTrackerData();
 
-        console.log(`[COOLDOWN] ${profileData.name} is now on cooldown for 3 hours`);
+        console.log(`[NO COOLDOWN] ${profileData.name} - no cooldown applied (might play more games)`);
       } else {
-        // Just update last checked time (don't update stats if no new match)
+        // No new match - apply cooldown to avoid spamming API
         this.trackedUsers[discordUserId].lastChecked = new Date().toISOString();
+        this.trackedUsers[discordUserId].lastMatchUpdate = new Date().toISOString(); // Start 3-hour cooldown
         this.saveTrackerData();
+        console.log(`[COOLDOWN] ${profileData.name} - no new match, cooldown applied for 3 hours`);
       }
     } catch (error) {
       console.error(`Error checking matches for user ${discordUserId}:`, error.message);
