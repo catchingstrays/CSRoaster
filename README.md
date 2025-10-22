@@ -100,7 +100,27 @@ LEETIFY_API_KEY=your_leetify_api_key
 LEETIFY_API_BASE_URL=https://api-public.cs-prod.leetify.com
 CHECK_INTERVAL_MINUTES=60
 USER_COOLDOWN_HOURS=3
+
+# Optional: ChatGPT Integration
+CHATGPT_ENABLED=false
+CHATGPT_API_KEY=your_openai_api_key
 ```
+
+### ChatGPT Roasts (Optional)
+
+Enable AI-generated roasts using OpenAI's ChatGPT:
+
+1. Get an API key from [OpenAI](https://platform.openai.com/api-keys)
+2. Set `CHATGPT_ENABLED=true` in your `.env` file
+3. Add your `CHATGPT_API_KEY`
+
+**Features:**
+- Personalized roasts based on player stats
+- Automatic caching (same roast for same match count)
+- Fallback to traditional roasts if API fails
+- Uses GPT-4o-mini for cost efficiency
+
+**Note:** ChatGPT API usage incurs costs. Traditional roasts are free and always available as fallback.
 
 ### Run
 

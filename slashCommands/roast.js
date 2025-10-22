@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const leetifyApi = require('../services/leetifyApi');
 const cs2RoastGenerator = require('../utils/cs2RoastGenerator');
+const chatGPTRoastGenerator = require('../services/chatGPTRoastGenerator');
 const { getUserSteam64Id } = require('../utils/userLinksManager');
 
 module.exports = {
@@ -52,10 +53,32 @@ module.exports = {
       const profileData = await leetifyApi.getProfile(steam64Id);
       const stats = cs2RoastGenerator.calculateStatsFromProfile(profileData);
       const playerName = profileData.name || targetUser.username;
+      const currentMatchCount = profileData.total_matches || 0;
 
-      // Generate roast (no previous stats for comparison)
-      const roasts = cs2RoastGenerator.generateRoastsWithComparison(stats, null);
-      const selectedRoast = roasts[Math.floor(Math.random() * roasts.length)];
+      // Generate roast using ChatGPT if enabled, otherwise use traditional
+      let selectedRoast;
+
+      if (chatGPTRoastGenerator.isEnabled()) {
+        try {
+          selectedRoast = await chatGPTRoastGenerator.getOrGenerateRoast(
+            userId,
+            stats,
+            null, // No previous stats for instant roast
+            currentMatchCount,
+            playerName,
+          );
+          console.log('[ROAST CMD] Using ChatGPT roast');
+        } catch (error) {
+          console.error('[ROAST CMD] ChatGPT failed, falling back to traditional:', error);
+          // Fallback to traditional roasts
+          const roasts = cs2RoastGenerator.generateRoastsWithComparison(stats, null);
+          selectedRoast = roasts[Math.floor(Math.random() * roasts.length)];
+        }
+      } else {
+        // Traditional roast generation
+        const roasts = cs2RoastGenerator.generateRoastsWithComparison(stats, null);
+        selectedRoast = roasts[Math.floor(Math.random() * roasts.length)];
+      }
 
       // Build roast message
       let roastMessage = `${targetUser}, ${selectedRoast}`;
