@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const leetifyApi = require('./leetifyApi');
 const cs2RoastGenerator = require('../utils/cs2RoastGenerator');
+const chatGPTRoastGenerator = require('./chatGPTRoastGenerator');
+const config = require('../config');
 const { loadUserLinks } = require('../utils/userLinksManager');
 const { getGuildConfig } = require('../utils/guildConfigManager');
 
@@ -78,6 +80,9 @@ class MatchTracker {
   initialize(discordClient) {
     this.client = discordClient;
     console.log('Match tracker initialized');
+
+    // Initialize ChatGPT roast generator
+    chatGPTRoastGenerator.initialize(config.chatGPTApiKey, config.chatGPTEnabled);
 
     // Start tracking when bot is ready
     if (this.client.isReady()) {
@@ -267,14 +272,36 @@ class MatchTracker {
       }
 
       const playerName = profileData.name || 'Unknown Player';
+      const currentMatchCount = profileData.total_matches || 0;
 
       // Generate roast once (cached for all guilds) - ensures same roast for same user
       const cacheKey = `${discordUserId}-${Date.now()}`;
       let selectedRoast;
 
       if (!this.roastCache[cacheKey]) {
-        const roasts = cs2RoastGenerator.generateRoastsWithComparison(currentStats, previousStats);
-        selectedRoast = roasts[Math.floor(Math.random() * roasts.length)];
+        // Use ChatGPT if enabled, otherwise use traditional roasts
+        if (chatGPTRoastGenerator.isEnabled()) {
+          try {
+            selectedRoast = await chatGPTRoastGenerator.getOrGenerateRoast(
+              discordUserId,
+              currentStats,
+              previousStats,
+              currentMatchCount,
+              playerName,
+            );
+            console.log(`[CHATGPT] Generated roast for ${playerName}`);
+          } catch (error) {
+            console.error('[CHATGPT] Failed to generate roast, falling back to traditional:', error);
+            // Fallback to traditional roasts
+            const roasts = cs2RoastGenerator.generateRoastsWithComparison(currentStats, previousStats);
+            selectedRoast = roasts[Math.floor(Math.random() * roasts.length)];
+          }
+        } else {
+          // Traditional roast generation
+          const roasts = cs2RoastGenerator.generateRoastsWithComparison(currentStats, previousStats);
+          selectedRoast = roasts[Math.floor(Math.random() * roasts.length)];
+        }
+
         this.roastCache[cacheKey] = selectedRoast;
 
         // Clear old cache entries (keep only last 100)
