@@ -134,15 +134,46 @@ class MatchTracker {
 
     console.log(`[${new Date().toISOString()}] Checking ${userIds.length} users for new matches...`);
 
+    const now = Date.now();
     let checkedCount = 0;
     let skippedCount = 0;
 
     for (const discordUserId of userIds) {
       const linkData = userLinks[discordUserId];
       const steam64Id = linkData.steam64Id;
+      const user = this.trackedUsers[discordUserId];
 
-      // Check if user is in cooldown
-      if (this.isUserInCooldown(discordUserId)) {
+      // Initialize user tracking data if missing (for existing users before learning system)
+      if (user && !user.checkingState) {
+        const nowDate = new Date();
+        user.playTimePattern = {
+          matchDetectionTimes: [],
+          dayOfWeekPatterns: {},
+          overallActiveHours: [],
+          confidenceScore: 0,
+          lastMatchDetectedAt: user.lastMatchUpdate || null,
+          daysSinceLastMatch: 0,
+        };
+        user.checkingState = {
+          currentState: 'INACTIVE',
+          stateEnteredAt: nowDate.toISOString(),
+          consecutiveNoMatchChecks: 0,
+          lastChecked: nowDate.toISOString(),
+          nextCheckAt: new Date(now + config.inactiveCheckInterval * 60 * 1000).toISOString(),
+        };
+      }
+
+      // Skip if not time to check yet (using new nextCheckAt-based scheduling)
+      if (user?.checkingState?.nextCheckAt) {
+        const nextCheck = new Date(user.checkingState.nextCheckAt).getTime();
+        if (now < nextCheck) {
+          const remainingMin = Math.round((nextCheck - now) / 60000);
+          console.log(`Skipping ${linkData.username} - next check in ${remainingMin}min (State: ${user.checkingState.currentState})`);
+          skippedCount++;
+          continue;
+        }
+      } else if (this.isUserInCooldown(discordUserId)) {
+        // Fallback to legacy cooldown for users without new system
         const cooldownRemaining = this.getCooldownRemaining(discordUserId);
         console.log(`Skipping ${linkData.username} - cooldown active (${Math.ceil(cooldownRemaining / 60000)} min remaining)`);
         skippedCount++;
@@ -160,7 +191,7 @@ class MatchTracker {
       await this.sleep(1000);
     }
 
-    console.log(`Finished checking: ${checkedCount} checked, ${skippedCount} skipped (cooldown)`);
+    console.log(`Finished checking: ${checkedCount} checked, ${skippedCount} skipped`);
   }
 
   /**
@@ -210,43 +241,103 @@ class MatchTracker {
 
       // Initialize tracking for this user if not exists
       if (!this.trackedUsers[discordUserId]) {
+        const now = new Date();
         this.trackedUsers[discordUserId] = {
           steam64Id: steam64Id,
           lastMatchCount: currentMatchCount,
-          lastChecked: new Date().toISOString(),
-          lastStats: currentStats, // Store the current stats
-          lastMatchUpdate: null, // No match update yet
+          lastChecked: now.toISOString(),
+          lastStats: currentStats,
+          lastMatchUpdate: null, // Legacy field
+          playTimePattern: {
+            matchDetectionTimes: [],
+            dayOfWeekPatterns: {},
+            overallActiveHours: [],
+            confidenceScore: 0,
+            lastMatchDetectedAt: null,
+            daysSinceLastMatch: 0,
+          },
+          checkingState: {
+            currentState: 'INACTIVE',
+            stateEnteredAt: now.toISOString(),
+            consecutiveNoMatchChecks: 0,
+            lastChecked: now.toISOString(),
+            nextCheckAt: new Date(Date.now() + config.inactiveCheckInterval * 60 * 1000).toISOString(),
+          },
         };
         this.saveTrackerData();
         console.log(`Started tracking ${profileData.name} - Current matches: ${currentMatchCount}`);
         return;
       }
 
-      const lastMatchCount = this.trackedUsers[discordUserId].lastMatchCount;
-      const previousStats = this.trackedUsers[discordUserId].lastStats || null;
+      const user = this.trackedUsers[discordUserId];
+      const lastMatchCount = user.lastMatchCount;
+      const previousStats = user.lastStats || null;
 
       // Check if match count increased
       if (currentMatchCount > lastMatchCount) {
+        // MATCH DETECTED!
         const newMatches = currentMatchCount - lastMatchCount;
-        console.log(`[MATCH] New match detected for ${profileData.name}! (${newMatches} new match${newMatches > 1 ? 'es' : ''})`);
+        const now = new Date();
 
-        // Send roast message with stat comparison
+        console.log(`[MATCH] ${profileData.name} played ${newMatches} new match(es)!`);
+
+        // Record detection time with day-of-week
+        user.playTimePattern.matchDetectionTimes.push({
+          timestamp: now.toISOString(),
+          dayOfWeek: now.getUTCDay(),
+          hour: now.getUTCHours(),
+        });
+
+        // Keep only last N detections
+        if (user.playTimePattern.matchDetectionTimes.length > config.patternHistorySize) {
+          user.playTimePattern.matchDetectionTimes = user.playTimePattern.matchDetectionTimes.slice(-config.patternHistorySize);
+        }
+
+        user.playTimePattern.lastMatchDetectedAt = now.toISOString();
+        user.playTimePattern.daysSinceLastMatch = 0;
+
+        // Recalculate pattern if enough data
+        if (config.playLearningEnabled && user.playTimePattern.matchDetectionTimes.length >= config.minMatchesForLearning) {
+          const newPattern = this.calculatePlayTimePattern(discordUserId);
+          if (newPattern) {
+            Object.assign(user.playTimePattern, newPattern);
+            console.log(`[LEARNING] Updated play-time pattern for ${profileData.name} (confidence: ${newPattern.confidenceScore.toFixed(2)})`);
+          }
+        }
+
+        // Send roast
         await this.sendRoastMessage(discordUserId, steam64Id, profileData, currentStats, previousStats);
 
-        // Update tracked data with new stats - NO cooldown (they might play more games)
-        this.trackedUsers[discordUserId].lastMatchCount = currentMatchCount;
-        this.trackedUsers[discordUserId].lastChecked = new Date().toISOString();
-        this.trackedUsers[discordUserId].lastStats = currentStats; // Update stored stats
-        this.trackedUsers[discordUserId].lastMatchUpdate = null; // Clear cooldown - they might play another game
+        // Update state
+        user.lastMatchCount = currentMatchCount;
+        user.lastStats = currentStats;
+        user.checkingState.currentState = 'JUST_PLAYED';
+        user.checkingState.stateEnteredAt = now.toISOString();
+        user.checkingState.consecutiveNoMatchChecks = 0;
+
+        // Calculate next check
+        const cooldown = config.playLearningEnabled ? this.getDynamicCooldown(discordUserId) : (config.justPlayedCheckInterval * 60 * 1000);
+        user.checkingState.nextCheckAt = new Date(Date.now() + cooldown).toISOString();
+        user.checkingState.lastChecked = now.toISOString();
+
         this.saveTrackerData();
 
-        console.log(`[NO COOLDOWN] ${profileData.name} - no cooldown applied (might play more games)`);
+        const nextCheckMin = Math.round(cooldown / 60000);
+        console.log(`[STATE] ${profileData.name} → JUST_PLAYED (next check in ${nextCheckMin}min)`);
+
       } else {
-        // No new match - apply cooldown to avoid spamming API
-        this.trackedUsers[discordUserId].lastChecked = new Date().toISOString();
-        this.trackedUsers[discordUserId].lastMatchUpdate = new Date().toISOString(); // Start 3-hour cooldown
+        // NO MATCH FOUND
+        user.checkingState.consecutiveNoMatchChecks++;
+
+        // Calculate next check based on current state
+        const cooldown = config.playLearningEnabled ? this.getDynamicCooldown(discordUserId) : (config.inactiveCheckInterval * 60 * 1000);
+        user.checkingState.nextCheckAt = new Date(Date.now() + cooldown).toISOString();
+        user.checkingState.lastChecked = new Date().toISOString();
+
         this.saveTrackerData();
-        console.log(`[COOLDOWN] ${profileData.name} - no new match, cooldown applied for 3 hours`);
+
+        const cooldownMin = Math.round(cooldown / 60000);
+        console.log(`[NO MATCH] ${profileData.name} - State: ${user.checkingState.currentState}, Next check in ${cooldownMin}min`);
       }
     } catch (error) {
       console.error(`Error checking matches for user ${discordUserId}:`, error.message);
@@ -381,6 +472,177 @@ class MatchTracker {
     const rating = csRating.rating || 0;
 
     return `${rank} (${rating})`;
+  }
+
+  /**
+   * Calculate play-time patterns from match detection history
+   * @param {string} discordUserId - Discord user ID
+   * @returns {Object} Pattern data with day-of-week analysis
+   */
+  calculatePlayTimePattern(discordUserId) {
+    const user = this.trackedUsers[discordUserId];
+    const detections = user.playTimePattern?.matchDetectionTimes || [];
+
+    if (detections.length < config.minMatchesForLearning) {
+      return null; // Not enough data
+    }
+
+    // Initialize day-of-week patterns
+    const dayPatterns = {};
+    for (let day = 0; day < 7; day++) {
+      dayPatterns[day] = { hourCounts: new Array(24).fill(0), matchCount: 0 };
+    }
+
+    // Analyze each detection with recency weighting
+    detections.forEach((detection, index) => {
+      const date = new Date(detection.timestamp);
+      const dayOfWeek = date.getUTCDay();
+      const hour = date.getUTCHours();
+      const weight = (index + 1) / detections.length; // Recent = higher weight
+
+      dayPatterns[dayOfWeek].hourCounts[hour] += weight;
+      dayPatterns[dayOfWeek].matchCount++;
+    });
+
+    // For each day, identify active hours
+    const result = { dayOfWeekPatterns: {}, overallActiveHours: [] };
+    const allHourCounts = new Array(24).fill(0);
+
+    for (let day = 0; day < 7; day++) {
+      const pattern = dayPatterns[day];
+
+      if (pattern.matchCount === 0) {
+        result.dayOfWeekPatterns[day] = { activeHours: [], matchCount: 0 };
+        continue;
+      }
+
+      // Find active hours for this day (threshold = 30% of max)
+      const maxCount = Math.max(...pattern.hourCounts);
+      const threshold = maxCount * 0.3;
+      const activeHours = pattern.hourCounts
+        .map((count, hour) => (count >= threshold ? hour : null))
+        .filter(h => h !== null);
+
+      // Expand to include adjacent hours (players play multiple games)
+      const expandedHours = new Set(activeHours);
+      activeHours.forEach(hour => {
+        expandedHours.add((hour - 1 + 24) % 24);
+        expandedHours.add((hour + 1) % 24);
+      });
+
+      result.dayOfWeekPatterns[day] = {
+        activeHours: Array.from(expandedHours).sort((a, b) => a - b),
+        matchCount: pattern.matchCount,
+      };
+
+      // Accumulate for overall pattern
+      pattern.hourCounts.forEach((count, hour) => {
+        allHourCounts[hour] += count;
+      });
+    }
+
+    // Calculate overall active hours (fallback when day pattern confidence is low)
+    const overallMax = Math.max(...allHourCounts);
+    const overallThreshold = overallMax * 0.3;
+    result.overallActiveHours = allHourCounts
+      .map((count, hour) => (count >= overallThreshold ? hour : null))
+      .filter(h => h !== null);
+
+    // Calculate confidence (0-1, based on number of detections)
+    result.confidenceScore = Math.min(1.0, detections.length / 15);
+    result.lastRecalculated = new Date().toISOString();
+
+    return result;
+  }
+
+  /**
+   * Get dynamic cooldown based on user's play-time pattern and current state
+   * @param {string} discordUserId - Discord user ID
+   * @returns {number} Cooldown in milliseconds
+   */
+  getDynamicCooldown(discordUserId) {
+    const user = this.trackedUsers[discordUserId];
+    const pattern = user.playTimePattern;
+    const state = user.checkingState;
+
+    // Calculate days since last match for soft-reset logic
+    if (pattern?.lastMatchDetectedAt) {
+      const daysSince = (Date.now() - new Date(pattern.lastMatchDetectedAt).getTime()) / (24 * 60 * 60 * 1000);
+      pattern.daysSinceLastMatch = daysSince;
+
+      // SOFT-RESET: No match in >7 days
+      if (daysSince > config.softResetDays && state.currentState !== 'SOFT_RESET') {
+        console.log(`[SOFT-RESET] User ${discordUserId} hasn't played in ${daysSince.toFixed(1)} days - switching to daily checks`);
+        state.currentState = 'SOFT_RESET';
+        state.stateEnteredAt = new Date().toISOString();
+        state.consecutiveNoMatchChecks = 0;
+      }
+    }
+
+    // Not enough data - use default 3 hours
+    if (!pattern || !pattern.matchDetectionTimes || pattern.matchDetectionTimes.length < config.minMatchesForLearning) {
+      return config.inactiveCheckInterval * 60 * 1000;
+    }
+
+    const now = new Date();
+    const currentDayOfWeek = now.getUTCDay();
+    const currentHour = now.getUTCHours();
+
+    // Get today's active hours (or fall back to overall pattern)
+    const todayPattern = pattern.dayOfWeekPatterns?.[currentDayOfWeek];
+    const activeHours = todayPattern?.matchCount >= config.dayPatternMinMatches
+      ? todayPattern.activeHours
+      : pattern.overallActiveHours || [];
+
+    const isActiveHour = activeHours.includes(currentHour);
+
+    switch (state.currentState) {
+    case 'SOFT_RESET':
+      // Player inactive >7 days - check once per day
+      return config.softResetCheckInterval * 60 * 1000;
+
+    case 'JUST_PLAYED': {
+      // Just detected match - aggressive 30min checking for 2 hours
+      const timeSinceMatch = Date.now() - new Date(state.stateEnteredAt).getTime();
+      if (timeSinceMatch < config.justPlayedDuration * 60 * 1000) {
+        return config.justPlayedCheckInterval * 60 * 1000;
+      }
+      // After 2 hours, transition
+      state.currentState = isActiveHour ? 'ACTIVE_SESSION' : 'INACTIVE';
+      state.stateEnteredAt = new Date().toISOString();
+      state.consecutiveNoMatchChecks = 0;
+      return this.getDynamicCooldown(discordUserId);
+    }
+
+    case 'ACTIVE_SESSION':
+      // In active hours - check every 30min for up to 4 checks
+      if (state.consecutiveNoMatchChecks < config.maxActiveSessionChecks) {
+        return config.activeSessionCheckInterval * 60 * 1000;
+      }
+      // After 4 failed checks, back off
+      state.currentState = 'COOLDOWN';
+      state.stateEnteredAt = new Date().toISOString();
+      return config.inactiveCheckInterval * 60 * 1000;
+
+    case 'COOLDOWN':
+      // Backed off during active hours
+      if (!isActiveHour) {
+        state.currentState = 'INACTIVE';
+        state.stateEnteredAt = new Date().toISOString();
+      }
+      return config.inactiveCheckInterval * 60 * 1000;
+
+    case 'INACTIVE':
+    default:
+      // Outside active hours
+      if (isActiveHour) {
+        state.currentState = 'ACTIVE_SESSION';
+        state.stateEnteredAt = new Date().toISOString();
+        state.consecutiveNoMatchChecks = 0;
+        return config.activeSessionCheckInterval * 60 * 1000;
+      }
+      return config.inactiveCheckInterval * 60 * 1000;
+    }
   }
 
   /**
