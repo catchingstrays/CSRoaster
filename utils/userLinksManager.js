@@ -1,7 +1,21 @@
 const fs = require('fs');
 const path = require('path');
+const { enableDMRoasts } = require('./userPreferencesManager');
 
 const USER_LINKS_PATH = path.join(__dirname, '../data/userLinks.json');
+
+// DM notification messages
+const DM_MESSAGES = {
+  SELF_LINK: '✅ **Account Linked Successfully!**\n\n' +
+             'You\'ll now receive roasts in DMs when new matches are detected.\n' +
+             'Use `/optout dm_roasts` to disable DM notifications.\n\n' +
+             '📊 Your stats are being tracked automatically.',
+  ADMIN_LINK: '✅ **Your CS2 Account Has Been Linked**\n\n' +
+              'A server admin has linked your account to track your matches.\n' +
+              'You\'ll receive roast notifications in DMs when new matches are detected.\n' +
+              'Use `/optout dm_roasts` to disable DM notifications.\n\n' +
+              '📊 Your stats are being tracked automatically.',
+};
 
 // Ensure data directory exists
 const dataDir = path.dirname(USER_LINKS_PATH);
@@ -48,9 +62,10 @@ function saveUserLinks(links) {
  * @param {string} steam64Id - Steam64 ID
  * @param {string} username - Discord username
  * @param {string} linkedBy - Discord ID of who linked them
- * @returns {boolean} Success status
+ * @param {Client} client - Discord client (optional, for admin-link DM testing)
+ * @returns {Promise<{success: boolean, dmEnabled: boolean, dmError: string|null}>} Result object
  */
-function linkUserToGuild(discordUserId, guildId, steam64Id, username, linkedBy) {
+async function linkUserToGuild(discordUserId, guildId, steam64Id, username, linkedBy, client = null) {
   const userLinks = loadUserLinks();
 
   // Initialize user data if not exists
@@ -72,7 +87,38 @@ function linkUserToGuild(discordUserId, guildId, steam64Id, username, linkedBy) 
   // Update username in case it changed
   userLinks[discordUserId].username = username;
 
-  return saveUserLinks(userLinks);
+  const linkSuccess = saveUserLinks(userLinks);
+
+  // If admin force-linked (linkedBy !== discordUserId), try to enable DM roasts if user has app
+  let dmEnabled = false;
+  let dmError = null;
+
+  if (client && linkedBy !== discordUserId) {
+    // Admin force-link - check if user can receive DMs
+    const canDM = await canSendDM(discordUserId, client);
+
+    if (canDM) {
+      try {
+        const user = await client.users.fetch(discordUserId);
+        await user.send({
+          content: DM_MESSAGES.ADMIN_LINK,
+        });
+
+        // DM succeeded - enable DM roasts
+        enableDMRoasts(discordUserId);
+        dmEnabled = true;
+      } catch (error) {
+        dmError = error.message;
+        dmEnabled = false;
+      }
+    }
+  }
+
+  return {
+    success: linkSuccess,
+    dmEnabled: dmEnabled,
+    dmError: dmError,
+  };
 }
 
 /**
@@ -177,14 +223,31 @@ function getUserGuilds(discordUserId) {
 }
 
 /**
+ * Check if user has bot/app installed and can receive DMs
+ * @param {string} discordUserId - Discord user ID
+ * @param {Client} client - Discord client
+ * @returns {Promise<boolean>} Whether user can receive DMs
+ */
+async function canSendDM(discordUserId, client) {
+  try {
+    const user = await client.users.fetch(discordUserId);
+    await user.createDM();
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
  * Link a user globally (no guild association)
  * Used for user-install context (DMs)
  * @param {string} discordUserId - Discord user ID
  * @param {string} steam64Id - Steam64 ID
  * @param {string} username - Discord username
- * @returns {boolean} Success status
+ * @param {Client} client - Discord client (optional, for DM testing)
+ * @returns {Promise<{success: boolean, dmEnabled: boolean, dmError: string|null}>} Result object
  */
-function linkUserGlobally(discordUserId, steam64Id, username) {
+async function linkUserGlobally(discordUserId, steam64Id, username, client = null) {
   const userLinks = loadUserLinks();
 
   // Initialize user data if not exists
@@ -205,7 +268,34 @@ function linkUserGlobally(discordUserId, steam64Id, username) {
     userLinks[discordUserId].globalLinkedAt = new Date().toISOString();
   }
 
-  return saveUserLinks(userLinks);
+  const linkSuccess = saveUserLinks(userLinks);
+
+  // Try to send test DM and enable DM roasts if user provided client
+  let dmEnabled = false;
+  let dmError = null;
+
+  if (client) {
+    try {
+      const user = await client.users.fetch(discordUserId);
+      await user.send({
+        content: DM_MESSAGES.SELF_LINK,
+      });
+
+      // DM succeeded - enable DM roasts
+      enableDMRoasts(discordUserId);
+      dmEnabled = true;
+    } catch (error) {
+      // DM failed - user has DMs disabled or blocked bot
+      dmError = error.message;
+      dmEnabled = false;
+    }
+  }
+
+  return {
+    success: linkSuccess,
+    dmEnabled: dmEnabled,
+    dmError: dmError,
+  };
 }
 
 /**
@@ -253,4 +343,5 @@ module.exports = {
   linkUserGlobally,
   isUserLinkedGlobally,
   getUserSteam64Id,
+  canSendDM,
 };

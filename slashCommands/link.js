@@ -74,17 +74,27 @@ module.exports = {
         return interaction.editReply({ embeds: [embed] });
       } else {
         // Update Steam64 ID
-        linkUserGlobally(targetUser.id, steam64Id, targetUser.username);
+        const result = await linkUserGlobally(targetUser.id, steam64Id, targetUser.username, interaction.client);
+
+        let description = `Updated your Steam64 ID from \`${existingSteam64}\` to \`${steam64Id}\``;
+        if (result.dmEnabled) {
+          description += '\n\n✅ DM notifications enabled! Check your DMs for confirmation.';
+        } else if (result.dmError) {
+          description += '\n\n⚠️ **Warning:** Couldn\'t send you a DM. Please enable "Allow direct messages from server members" in your privacy settings if you want DM notifications.';
+        }
+
         const embed = new EmbedBuilder()
           .setColor('#00ff00')
           .setTitle('Link Updated')
-          .setDescription(`Updated your Steam64 ID from \`${existingSteam64}\` to \`${steam64Id}\``);
+          .setDescription(description);
         return interaction.editReply({ embeds: [embed] });
       }
     }
 
-    // Link user globally
-    if (!linkUserGlobally(targetUser.id, steam64Id, targetUser.username)) {
+    // Link user globally with DM testing
+    const linkResult = await linkUserGlobally(targetUser.id, steam64Id, targetUser.username, interaction.client);
+
+    if (!linkResult.success) {
       const embed = new EmbedBuilder()
         .setColor('#ff0000')
         .setTitle('Error')
@@ -109,6 +119,13 @@ module.exports = {
       };
       matchTracker.saveTrackerData();
 
+      let note = 'Automatic roasting only works in servers where the bot is configured.';
+      if (linkResult.dmEnabled) {
+        note += '\n✅ DM notifications enabled! Check your DMs for confirmation.';
+      } else if (linkResult.dmError) {
+        note += '\n⚠️ DM notifications couldn\'t be enabled. Please enable "Allow direct messages from server members" in your privacy settings.';
+      }
+
       const successEmbed = new EmbedBuilder()
         .setColor('#00ff00')
         .setTitle('Global Link Successful')
@@ -117,7 +134,7 @@ module.exports = {
           { name: 'Player', value: playerName },
           { name: 'Matches Tracked', value: currentMatchCount.toString() },
           { name: 'Available Commands', value: '`/stats` - View your stats\n`/roast` - Get instant roasts\n`/tracker check` - Check for new matches' },
-          { name: 'Note', value: 'Automatic roasting only works in servers where the bot is configured.' },
+          { name: 'Note', value: note },
         );
       await interaction.editReply({ embeds: [successEmbed] });
 
@@ -177,8 +194,10 @@ module.exports = {
     // Check if user is already linked in this guild
     const alreadyLinked = isUserLinkedInGuild(targetUser.id, interaction.guild.id);
 
-    // Save the link (guild-specific)
-    if (!linkUserToGuild(targetUser.id, interaction.guild.id, steam64Id, targetUser.username, interaction.user.id)) {
+    // Save the link (guild-specific) with DM testing
+    const linkResult = await linkUserToGuild(targetUser.id, interaction.guild.id, steam64Id, targetUser.username, interaction.user.id, interaction.client);
+
+    if (!linkResult.success) {
       const embed = new EmbedBuilder()
         .setColor('#ff0000')
         .setTitle('Error')
@@ -255,6 +274,15 @@ module.exports = {
       }
 
       // Update the reply with embed
+      let status = 'Initial roast sent! Automatic tracking is now active.';
+      if (linkResult.dmEnabled) {
+        status += '\n\n✅ DM notifications enabled! User will receive DMs when new matches are detected.';
+      } else if (linkResult.dmError && mentionedUser) {
+        status += '\n\n⚠️ DM notifications couldn\'t be enabled for this user (they may need to enable DMs or install the app).';
+      } else if (linkResult.dmError && !mentionedUser) {
+        status += '\n\n⚠️ DM notifications couldn\'t be enabled. Please enable "Allow direct messages from server members" in your privacy settings.';
+      }
+
       const successEmbed = new EmbedBuilder()
         .setColor('#00ff00')
         .setTitle('Link Successful')
@@ -262,7 +290,7 @@ module.exports = {
         .addFields(
           { name: 'Player', value: playerName },
           { name: 'Matches Tracked', value: currentMatchCount.toString() },
-          { name: 'Status', value: 'Initial roast sent! Automatic tracking is now active.' },
+          { name: 'Status', value: status },
         );
       await interaction.editReply({ embeds: [successEmbed] });
 
