@@ -7,7 +7,7 @@
     "start": "node index.js",
     "dev": "node --watch index.js",
     "test": "npm run lint && npm run test:syntax",
-    "test:syntax": "node --check index.js && node --check config.js && node --check commands/link.js && node --check commands/setup.js && node --check commands/stats.js && node --check commands/tracker.js && node --check services/leetifyApi.js && node --check services/matchTracker.js && node --check utils/guildConfigManager.js && node --check utils/userLinksManager.js && node --check utils/cs2RoastGenerator.js",
+    "test:syntax": "node --check index.js && node --check config.js && node --check commands/link.js && node --check commands/setup.js && node --check commands/stats.js && node --check commands/tracker.js && node --check slashCommands/link.js && node --check slashCommands/setup.js && node --check slashCommands/stats.js && node --check slashCommands/tracker.js && node --check services/leetifyApi.js && node --check services/matchTracker.js && node --check utils/guildConfigManager.js && node --check utils/userLinksManager.js && node --check utils/cs2RoastGenerator.js && node --check utils/commandDeployer.js && node --check utils/guildTracker.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
