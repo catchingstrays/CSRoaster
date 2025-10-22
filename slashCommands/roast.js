@@ -61,7 +61,7 @@ module.exports = {
       if (chatGPTRoastGenerator.isEnabled()) {
         try {
           selectedRoast = await chatGPTRoastGenerator.getOrGenerateRoast(
-            userId,
+            steam64Id,
             stats,
             null, // No previous stats for instant roast
             currentMatchCount,

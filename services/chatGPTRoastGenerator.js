@@ -71,14 +71,14 @@ class ChatGPTRoastGenerator {
 
   /**
    * Generate a cache key based on user stats
-   * @param {string} userId - Discord user ID
+   * @param {string} steam64Id - Steam64 ID (for global caching across servers)
    * @param {Object} stats - User statistics
    * @param {number} matchCount - Total match count
    * @returns {string}
    */
-  generateCacheKey(userId, stats, matchCount) {
-    // Cache key includes userId and matchCount to ensure unique roasts per match update
-    return `${userId}_${matchCount}_${stats.winRate.toFixed(1)}_${stats.aimRating.toFixed(1)}`;
+  generateCacheKey(steam64Id, stats, matchCount) {
+    // Cache key uses steam64Id for global caching (same roast across all servers/DMs)
+    return `${steam64Id}_${matchCount}_${stats.winRate.toFixed(1)}_${stats.aimRating.toFixed(1)}`;
   }
 
   /**
@@ -250,19 +250,19 @@ T Opening Success: ${stats.tOpeningDuelSuccessPercentage.toFixed(1)}%${previousS
 
   /**
    * Get or generate a roast with caching
-   * @param {string} userId - Discord user ID
+   * @param {string} steam64Id - Steam64 ID (for global caching)
    * @param {Object} stats - User statistics
    * @param {Object} previousStats - Previous statistics (optional)
    * @param {number} matchCount - Total match count
    * @param {string} playerName - Player's name
    * @returns {Promise<string>}
    */
-  async getOrGenerateRoast(userId, stats, previousStats, matchCount, playerName = 'this player') {
+  async getOrGenerateRoast(steam64Id, stats, previousStats, matchCount, playerName = 'this player') {
     if (!this.isEnabled()) {
       throw new Error('ChatGPT roast generator is not enabled');
     }
 
-    const cacheKey = this.generateCacheKey(userId, stats, matchCount);
+    const cacheKey = this.generateCacheKey(steam64Id, stats, matchCount);
 
     // Check cache first
     const cachedRoast = this.getCachedRoast(cacheKey);

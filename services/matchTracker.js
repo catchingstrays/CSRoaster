@@ -283,7 +283,7 @@ class MatchTracker {
         if (chatGPTRoastGenerator.isEnabled()) {
           try {
             selectedRoast = await chatGPTRoastGenerator.getOrGenerateRoast(
-              discordUserId,
+              steam64Id,
               currentStats,
               previousStats,
               currentMatchCount,
