@@ -24,8 +24,8 @@ module.exports = {
       return message.reply({ embeds: [embed] });
     }
 
-    const ADMIN_ID = '945415570281603103'; // Admin who can link others
-    const isAdmin = message.author.id === ADMIN_ID;
+    // Check if user has Administrator permission in this server
+    const isAdmin = message.member.permissions.has('Administrator');
 
     if (args.length < 1) {
       const embed = new EmbedBuilder()
