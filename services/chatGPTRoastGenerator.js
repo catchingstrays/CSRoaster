@@ -142,7 +142,7 @@ class ChatGPTRoastGenerator {
             },
           ],
           max_tokens: 150,
-          temperature: 1.2, // Very high creativity for maximum varied roasts
+          temperature: 1.0, // High creativity while maintaining coherence
         }),
       });
 

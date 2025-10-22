@@ -89,6 +89,8 @@ The bot uses **advanced machine learning** to optimize API usage and detection s
 - Check every 3 hours outside those hours
 - After detecting a match, check every 30 min for 2 hours (you might play another game)
 
+**Timezone Note:** The learning system uses UTC timezone for all users. If you're in a different timezone, the bot will learn your play hours in UTC. For example, if you play at 8pm PST, the bot learns this as 4am UTC (next day). This doesn't affect functionality - the bot still learns your patterns correctly.
+
 ### Multi-Server Support
 
 - Link once, roast everywhere

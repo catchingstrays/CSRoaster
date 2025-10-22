@@ -16,6 +16,14 @@ const USER_COOLDOWN_HOURS = parseInt(process.env.USER_COOLDOWN_HOURS, 10) || 3;
 const CHECK_INTERVAL = CHECK_INTERVAL_MINUTES * 60 * 1000; // Convert minutes to milliseconds
 const USER_COOLDOWN = USER_COOLDOWN_HOURS * 60 * 60 * 1000; // Convert hours to milliseconds
 
+// Learning system constants
+const LEARNING_CONSTANTS = {
+  ACTIVE_HOUR_THRESHOLD: 0.3, // 30% of max count to consider hour "active"
+  CONFIDENCE_MATCH_THRESHOLD: 15, // Matches needed for full confidence (1.0)
+  PATTERN_RECALC_INTERVAL_MS: 24 * 60 * 60 * 1000, // Recalculate patterns daily
+  MAX_RECURSION_DEPTH: 2, // Prevent infinite recursion in state machine
+};
+
 class MatchTracker {
   constructor() {
     this.client = null;
@@ -475,6 +483,24 @@ class MatchTracker {
   }
 
   /**
+   * Transition user state and update metadata
+   * @param {Object} user - User tracking object
+   * @param {string} newState - New state to transition to
+   * @param {boolean} resetConsecutiveChecks - Whether to reset consecutive check counter
+   */
+  transitionState(user, newState, resetConsecutiveChecks = true) {
+    const oldState = user.checkingState.currentState;
+    user.checkingState.currentState = newState;
+    user.checkingState.stateEnteredAt = new Date().toISOString();
+
+    if (resetConsecutiveChecks) {
+      user.checkingState.consecutiveNoMatchChecks = 0;
+    }
+
+    console.log(`[STATE TRANSITION] ${oldState} → ${newState}`);
+  }
+
+  /**
    * Calculate play-time patterns from match detection history
    * @param {string} discordUserId - Discord user ID
    * @returns {Object} Pattern data with day-of-week analysis
@@ -485,6 +511,15 @@ class MatchTracker {
 
     if (detections.length < config.minMatchesForLearning) {
       return null; // Not enough data
+    }
+
+    // Optimization: Skip recalculation if pattern was recently updated
+    const lastRecalc = user.playTimePattern?.lastRecalculated;
+    if (lastRecalc) {
+      const timeSinceRecalc = Date.now() - new Date(lastRecalc).getTime();
+      if (timeSinceRecalc < LEARNING_CONSTANTS.PATTERN_RECALC_INTERVAL_MS) {
+        return null; // Skip recalculation (patterns don't change that quickly)
+      }
     }
 
     // Initialize day-of-week patterns
@@ -516,9 +551,9 @@ class MatchTracker {
         continue;
       }
 
-      // Find active hours for this day (threshold = 30% of max)
+      // Find active hours for this day using defined threshold constant
       const maxCount = Math.max(...pattern.hourCounts);
-      const threshold = maxCount * 0.3;
+      const threshold = maxCount * LEARNING_CONSTANTS.ACTIVE_HOUR_THRESHOLD;
       const activeHours = pattern.hourCounts
         .map((count, hour) => (count >= threshold ? hour : null))
         .filter(h => h !== null);
@@ -543,13 +578,13 @@ class MatchTracker {
 
     // Calculate overall active hours (fallback when day pattern confidence is low)
     const overallMax = Math.max(...allHourCounts);
-    const overallThreshold = overallMax * 0.3;
+    const overallThreshold = overallMax * LEARNING_CONSTANTS.ACTIVE_HOUR_THRESHOLD;
     result.overallActiveHours = allHourCounts
       .map((count, hour) => (count >= overallThreshold ? hour : null))
       .filter(h => h !== null);
 
-    // Calculate confidence (0-1, based on number of detections)
-    result.confidenceScore = Math.min(1.0, detections.length / 15);
+    // Calculate confidence using defined threshold constant
+    result.confidenceScore = Math.min(1.0, detections.length / LEARNING_CONSTANTS.CONFIDENCE_MATCH_THRESHOLD);
     result.lastRecalculated = new Date().toISOString();
 
     return result;
@@ -558,9 +593,16 @@ class MatchTracker {
   /**
    * Get dynamic cooldown based on user's play-time pattern and current state
    * @param {string} discordUserId - Discord user ID
+   * @param {number} _recursionDepth - Internal recursion guard (do not use)
    * @returns {number} Cooldown in milliseconds
    */
-  getDynamicCooldown(discordUserId) {
+  getDynamicCooldown(discordUserId, _recursionDepth = 0) {
+    // Recursion guard to prevent infinite loops
+    if (_recursionDepth >= LEARNING_CONSTANTS.MAX_RECURSION_DEPTH) {
+      console.error(`[ERROR] Max recursion depth reached for user ${discordUserId}, using fallback`);
+      return config.inactiveCheckInterval * 60 * 1000;
+    }
+
     const user = this.trackedUsers[discordUserId];
     const pattern = user.playTimePattern;
     const state = user.checkingState;
@@ -573,9 +615,7 @@ class MatchTracker {
       // SOFT-RESET: No match in >7 days
       if (daysSince > config.softResetDays && state.currentState !== 'SOFT_RESET') {
         console.log(`[SOFT-RESET] User ${discordUserId} hasn't played in ${daysSince.toFixed(1)} days - switching to daily checks`);
-        state.currentState = 'SOFT_RESET';
-        state.stateEnteredAt = new Date().toISOString();
-        state.consecutiveNoMatchChecks = 0;
+        this.transitionState(user, 'SOFT_RESET');
       }
     }
 
@@ -585,8 +625,8 @@ class MatchTracker {
     }
 
     const now = new Date();
-    const currentDayOfWeek = now.getUTCDay();
-    const currentHour = now.getUTCHours();
+    const currentDayOfWeek = now.getUTCDay(); // NOTE: Using UTC timezone
+    const currentHour = now.getUTCHours(); // NOTE: Using UTC timezone
 
     // Get today's active hours (or fall back to overall pattern)
     const todayPattern = pattern.dayOfWeekPatterns?.[currentDayOfWeek];
@@ -607,11 +647,13 @@ class MatchTracker {
       if (timeSinceMatch < config.justPlayedDuration * 60 * 1000) {
         return config.justPlayedCheckInterval * 60 * 1000;
       }
-      // After 2 hours, transition
-      state.currentState = isActiveHour ? 'ACTIVE_SESSION' : 'INACTIVE';
-      state.stateEnteredAt = new Date().toISOString();
-      state.consecutiveNoMatchChecks = 0;
-      return this.getDynamicCooldown(discordUserId);
+      // After 2 hours, transition to appropriate state based on current time
+      const nextState = isActiveHour ? 'ACTIVE_SESSION' : 'INACTIVE';
+      this.transitionState(user, nextState);
+      // Calculate cooldown for new state without recursion
+      return isActiveHour
+        ? config.activeSessionCheckInterval * 60 * 1000
+        : config.inactiveCheckInterval * 60 * 1000;
     }
 
     case 'ACTIVE_SESSION':
@@ -619,26 +661,22 @@ class MatchTracker {
       if (state.consecutiveNoMatchChecks < config.maxActiveSessionChecks) {
         return config.activeSessionCheckInterval * 60 * 1000;
       }
-      // After 4 failed checks, back off
-      state.currentState = 'COOLDOWN';
-      state.stateEnteredAt = new Date().toISOString();
+      // After 4 failed checks, back off to cooldown
+      this.transitionState(user, 'COOLDOWN', false);
       return config.inactiveCheckInterval * 60 * 1000;
 
     case 'COOLDOWN':
-      // Backed off during active hours
+      // Backed off during active hours - check if we've left active window
       if (!isActiveHour) {
-        state.currentState = 'INACTIVE';
-        state.stateEnteredAt = new Date().toISOString();
+        this.transitionState(user, 'INACTIVE');
       }
       return config.inactiveCheckInterval * 60 * 1000;
 
     case 'INACTIVE':
     default:
-      // Outside active hours
+      // Outside active hours - check if we've entered active window
       if (isActiveHour) {
-        state.currentState = 'ACTIVE_SESSION';
-        state.stateEnteredAt = new Date().toISOString();
-        state.consecutiveNoMatchChecks = 0;
+        this.transitionState(user, 'ACTIVE_SESSION');
         return config.activeSessionCheckInterval * 60 * 1000;
       }
       return config.inactiveCheckInterval * 60 * 1000;
