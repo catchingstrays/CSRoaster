@@ -21,7 +21,6 @@ const LEARNING_CONSTANTS = {
   ACTIVE_HOUR_THRESHOLD: 0.3, // 30% of max count to consider hour "active"
   CONFIDENCE_MATCH_THRESHOLD: 15, // Matches needed for full confidence (1.0)
   PATTERN_RECALC_INTERVAL_MS: 24 * 60 * 60 * 1000, // Recalculate patterns daily
-  MAX_RECURSION_DEPTH: 2, // Prevent infinite recursion in state machine
 };
 
 class MatchTracker {
@@ -304,11 +303,18 @@ class MatchTracker {
         user.playTimePattern.lastMatchDetectedAt = now.toISOString();
         user.playTimePattern.daysSinceLastMatch = 0;
 
-        // Recalculate pattern if enough data
+        // Exit SOFT_RESET if player returns
+        if (user.checkingState.currentState === 'SOFT_RESET') {
+          console.log(`[RECOVERY] ${profileData.name} returned from inactivity - exiting SOFT_RESET`);
+        }
+
+        // Recalculate pattern if enough data (mark as dirty to trigger recalc)
         if (config.playLearningEnabled && user.playTimePattern.matchDetectionTimes.length >= config.minMatchesForLearning) {
+          user.playTimePattern.needsRecalculation = true;
           const newPattern = this.calculatePlayTimePattern(discordUserId);
           if (newPattern) {
             Object.assign(user.playTimePattern, newPattern);
+            user.playTimePattern.needsRecalculation = false;
             console.log(`[LEARNING] Updated play-time pattern for ${profileData.name} (confidence: ${newPattern.confidenceScore.toFixed(2)})`);
           }
         }
@@ -324,7 +330,7 @@ class MatchTracker {
         user.checkingState.consecutiveNoMatchChecks = 0;
 
         // Calculate next check
-        const cooldown = config.playLearningEnabled ? this.getDynamicCooldown(discordUserId) : (config.justPlayedCheckInterval * 60 * 1000);
+        const cooldown = config.playLearningEnabled ? this.updateStateAndGetCooldown(discordUserId) : (config.justPlayedCheckInterval * 60 * 1000);
         user.checkingState.nextCheckAt = new Date(Date.now() + cooldown).toISOString();
         user.checkingState.lastChecked = now.toISOString();
 
@@ -335,10 +341,13 @@ class MatchTracker {
 
       } else {
         // NO MATCH FOUND
-        user.checkingState.consecutiveNoMatchChecks++;
+        // Only increment counter during ACTIVE_SESSION (used for transitioning to COOLDOWN)
+        if (user.checkingState.currentState === 'ACTIVE_SESSION') {
+          user.checkingState.consecutiveNoMatchChecks++;
+        }
 
         // Calculate next check based on current state
-        const cooldown = config.playLearningEnabled ? this.getDynamicCooldown(discordUserId) : (config.inactiveCheckInterval * 60 * 1000);
+        const cooldown = config.playLearningEnabled ? this.updateStateAndGetCooldown(discordUserId) : (config.inactiveCheckInterval * 60 * 1000);
         user.checkingState.nextCheckAt = new Date(Date.now() + cooldown).toISOString();
         user.checkingState.lastChecked = new Date().toISOString();
 
@@ -513,9 +522,10 @@ class MatchTracker {
       return null; // Not enough data
     }
 
-    // Optimization: Skip recalculation if pattern was recently updated
+    // Optimization: Skip recalculation if pattern was recently updated AND no new data added
     const lastRecalc = user.playTimePattern?.lastRecalculated;
-    if (lastRecalc) {
+    const needsRecalc = user.playTimePattern?.needsRecalculation;
+    if (lastRecalc && !needsRecalc) {
       const timeSinceRecalc = Date.now() - new Date(lastRecalc).getTime();
       if (timeSinceRecalc < LEARNING_CONSTANTS.PATTERN_RECALC_INTERVAL_MS) {
         return null; // Skip recalculation (patterns don't change that quickly)
@@ -558,7 +568,10 @@ class MatchTracker {
         .map((count, hour) => (count >= threshold ? hour : null))
         .filter(h => h !== null);
 
-      // Expand to include adjacent hours (players play multiple games)
+      // Expand to include adjacent hours ±1 hour
+      // Rationale: Match detection is delayed (matches take 30-60min to complete),
+      // so if a player starts at 8pm, we might detect at 9pm. Expanding the window
+      // ensures we catch the beginning and end of play sessions more reliably.
       const expandedHours = new Set(activeHours);
       activeHours.forEach(hour => {
         expandedHours.add((hour - 1 + 24) % 24);
@@ -591,18 +604,12 @@ class MatchTracker {
   }
 
   /**
-   * Get dynamic cooldown based on user's play-time pattern and current state
+   * Update user state based on current conditions and return appropriate cooldown
+   * Note: This function may transition the user to a different state as a side effect
    * @param {string} discordUserId - Discord user ID
-   * @param {number} _recursionDepth - Internal recursion guard (do not use)
    * @returns {number} Cooldown in milliseconds
    */
-  getDynamicCooldown(discordUserId, _recursionDepth = 0) {
-    // Recursion guard to prevent infinite loops
-    if (_recursionDepth >= LEARNING_CONSTANTS.MAX_RECURSION_DEPTH) {
-      console.error(`[ERROR] Max recursion depth reached for user ${discordUserId}, using fallback`);
-      return config.inactiveCheckInterval * 60 * 1000;
-    }
-
+  updateStateAndGetCooldown(discordUserId) {
     const user = this.trackedUsers[discordUserId];
     const pattern = user.playTimePattern;
     const state = user.checkingState;
@@ -628,9 +635,13 @@ class MatchTracker {
     const currentDayOfWeek = now.getUTCDay(); // NOTE: Using UTC timezone
     const currentHour = now.getUTCHours(); // NOTE: Using UTC timezone
 
-    // Get today's active hours (or fall back to overall pattern)
+    // Get today's active hours with confidence-based fallback
+    // Use day-specific pattern only if: (1) enough day data AND (2) overall confidence is high
     const todayPattern = pattern.dayOfWeekPatterns?.[currentDayOfWeek];
-    const activeHours = todayPattern?.matchCount >= config.dayPatternMinMatches
+    const hasEnoughDayData = todayPattern?.matchCount >= config.dayPatternMinMatches;
+    const hasHighConfidence = pattern.confidenceScore >= 0.5; // At least ~8 matches for 0.5 confidence
+
+    const activeHours = hasEnoughDayData && hasHighConfidence
       ? todayPattern.activeHours
       : pattern.overallActiveHours || [];
 

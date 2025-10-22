@@ -64,6 +64,8 @@ Find your Steam64 ID at [steamid.io](https://steamid.io/)
 
 ### Intelligent Match Detection System
 
+⚠️ **IMPORTANT: Universal Timezone** - The bot uses **UTC timezone** for all users globally. This is intentional to ensure consistent behavior across all regions. The bot will still learn your play patterns correctly regardless of your actual timezone.
+
 The bot uses **advanced machine learning** to optimize API usage and detection speed:
 
 **Learning Algorithm:**
@@ -84,12 +86,10 @@ The bot uses **advanced machine learning** to optimize API usage and detection s
 - Minimal API waste for inactive players
 - Automatically adapts to schedule changes
 
-**Example:** If the bot learns you play Monday/Wednesday/Friday 6-10pm, it will:
+**Example:** If the bot learns you play Monday/Wednesday/Friday 6-10pm (in your local time), it will:
 - Check every 30 min during those hours
 - Check every 3 hours outside those hours
 - After detecting a match, check every 30 min for 2 hours (you might play another game)
-
-**Timezone Note:** The learning system uses UTC timezone for all users. If you're in a different timezone, the bot will learn your play hours in UTC. For example, if you play at 8pm PST, the bot learns this as 4am UTC (next day). This doesn't affect functionality - the bot still learns your patterns correctly.
 
 ### Multi-Server Support
 
