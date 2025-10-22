@@ -61,10 +61,10 @@ async function deployGlobalCommands() {
     );
 
     console.log(`[GLOBAL DEPLOY] Successfully reloaded ${data.length} global application (/) commands.`);
-    console.log(`[GLOBAL DEPLOY] Commands are now available for both guild and user installation.`);
+    console.log('[GLOBAL DEPLOY] Commands are now available for both guild and user installation.');
     return true;
   } catch (error) {
-    console.error(`[GLOBAL DEPLOY ERROR] Failed to deploy global commands:`, error);
+    console.error('[GLOBAL DEPLOY ERROR] Failed to deploy global commands:', error);
     return false;
   }
 }
@@ -77,17 +77,17 @@ async function removeGlobalCommands() {
   try {
     const rest = new REST().setToken(config.token);
 
-    console.log(`[GLOBAL DEPLOY] Removing all global application (/) commands.`);
+    console.log('[GLOBAL DEPLOY] Removing all global application (/) commands.');
 
     await rest.put(
       Routes.applicationCommands(config.clientId),
       { body: [] },
     );
 
-    console.log(`[GLOBAL DEPLOY] Successfully removed all global commands.`);
+    console.log('[GLOBAL DEPLOY] Successfully removed all global commands.');
     return true;
   } catch (error) {
-    console.error(`[GLOBAL DEPLOY ERROR] Failed to remove global commands:`, error);
+    console.error('[GLOBAL DEPLOY ERROR] Failed to remove global commands:', error);
     return false;
   }
 }

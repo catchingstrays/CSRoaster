@@ -8,7 +8,6 @@ const {
   isUserLinkedInGuild,
   getUserSteam64Id,
   loadUserLinks,
-  saveUserLinks,
 } = require('../utils/userLinksManager');
 const { isGuildConfigured, getGuildConfig } = require('../utils/guildConfigManager');
 

@@ -50,7 +50,7 @@ module.exports = {
         .setDescription(
           targetUser.id === interaction.user.id
             ? 'You need to link your account first! Use `/link steam64_id:YOUR_ID`'
-            : `${targetUser.username} is not linked${isGuildContext ? ' in this server' : ''}! They need to use \`/link\` first.`
+            : `${targetUser.username} is not linked${isGuildContext ? ' in this server' : ''}! They need to use \`/link\` first.`,
         )
         .addFields({
           name: 'Find your Steam64 ID',

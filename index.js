@@ -6,7 +6,7 @@ const config = require('./config');
 const matchTracker = require('./services/matchTracker');
 const { deleteGuildConfig } = require('./utils/guildConfigManager');
 const { removeGuildFromAllUsers } = require('./utils/userLinksManager');
-const { deployCommandsToGuild, removeCommandsFromGuild } = require('./utils/commandDeployer');
+const { removeCommandsFromGuild } = require('./utils/commandDeployer');
 const { deployGlobalCommands } = require('./utils/globalCommandDeployer');
 const {
   trackGuild,
@@ -203,7 +203,7 @@ client.on('guildCreate', async (guild) => {
 
   // Note: Commands are deployed globally, no per-guild deployment needed
   markCommandsDeployed(guild.id);
-  console.log(`[GUILD JOIN] Guild tracked. Commands are available globally.`);
+  console.log('[GUILD JOIN] Guild tracked. Commands are available globally.');
 
   // Send onboarding message
   await sendOnboardingMessage(guild);

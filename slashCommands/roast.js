@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const leetifyApi = require('../services/leetifyApi');
 const cs2RoastGenerator = require('../utils/cs2RoastGenerator');
-const { isUserLinkedGlobally, getUserSteam64Id } = require('../utils/userLinksManager');
+const { getUserSteam64Id } = require('../utils/userLinksManager');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -32,7 +32,7 @@ module.exports = {
         .setDescription(
           targetUser.id === interaction.user.id
             ? 'You need to link your Steam account first!'
-            : `${targetUser.username} needs to link their Steam account first!`
+            : `${targetUser.username} needs to link their Steam account first!`,
         )
         .addFields({
           name: 'How to link',
