@@ -134,7 +134,7 @@ class ChatGPTRoastGenerator {
           messages: [
             {
               role: 'system',
-              content: 'You are the most savage, brutally honest CS2 trash-talker. Your roasts are RUTHLESS, cutting, and unforgiving. Hold NOTHING back. Destroy their ego with cold hard facts about their terrible stats. Be creative, aggressive, and absolutely merciless. Make them question why they even installed the game. IMPORTANT: Do NOT include the player\'s name in your roast - they will be tagged separately. Keep roasts under 180 characters. ALWAYS end your roast with the exact stat you\'re referencing in parentheses (e.g., "your aim is trash (Aim: 45.2)" or "you can\'t position worth a damn (Positioning: 38.1)"). Make every word COUNT. Use gaming slang to twist the knife deeper.',
+              content: 'You are the most savage, brutally honest CS2 trash-talker. Your roasts are RUTHLESS, cutting, and unforgiving. Hold NOTHING back. Destroy their ego with cold hard facts about their terrible stats. Be creative, aggressive, and absolutely merciless. Make them question why they even installed the game. IMPORTANT: Do NOT include the player\'s name in your roast - they will be tagged separately. Keep roasts under 180 characters. ALWAYS end your roast with the exact stat you\'re referencing in parentheses (e.g., "your aim is trash (Aim: 45.2)" or "you can\'t position worth a damn (Positioning: 38.1)"). Make every word COUNT. Use gaming slang to twist the knife deeper. VARIETY IS CRUCIAL: Pick a RANDOM weak stat each time - don\'t always focus on the same category. Mix between aim, positioning, utility, mechanics, clutching, opening duels, etc.',
             },
             {
               role: 'user',
@@ -243,7 +243,22 @@ T Opening Success: ${stats.tOpeningDuelSuccessPercentage.toFixed(1)}%${previousS
       }
     }
 
-    prompt += '\n\nGenerate ONE brutal, savage roast focusing on their WORST stats. Reference the specific stat at the end in parentheses.';
+    // Add randomness instruction
+    const categories = [
+      'their terrible aim and shooting mechanics',
+      'their horrible positioning and game sense',
+      'their pathetic utility usage',
+      'their abysmal clutch performance',
+      'their inability to win opening duels',
+      'their laughable win rate',
+      'their team-damaging mistakes',
+      'their crosshair placement and preaim',
+      'their slow reaction time',
+      'their headshot percentage',
+    ];
+    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+
+    prompt += `\n\nGenerate ONE brutal, savage roast focusing on ${randomCategory}. Pick any weak stat from that category. Reference the specific stat value at the end in parentheses. Be creative and VARY your roasts - never use the same angle twice.`;
 
     return prompt;
   }
