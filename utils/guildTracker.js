@@ -56,6 +56,17 @@ function saveGuildTracker(data) {
  * @returns {boolean} Success status
  */
 function trackGuild(guildId, guildName, isNew = false) {
+  // Validate inputs
+  if (!guildId || typeof guildId !== 'string') {
+    console.error('[GUILD TRACKER] Invalid guild ID:', guildId);
+    return false;
+  }
+
+  if (!guildName || typeof guildName !== 'string') {
+    console.warn('[GUILD TRACKER] Invalid guild name for', guildId, '- using fallback');
+    guildName = 'Unknown Server';
+  }
+
   try {
     const data = loadGuildTracker();
 
@@ -228,6 +239,9 @@ async function detectNewGuilds(client) {
     return [];
   }
 }
+
+// Ensure guild tracker file exists on module load
+ensureGuildTrackerFile();
 
 module.exports = {
   trackGuild,

@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Collection, EmbedBuilder, MessageFlags } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, EmbedBuilder, MessageFlags, ActivityType } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const config = require('./config');
@@ -126,7 +126,7 @@ async function processOnboarding(client) {
 client.once('clientReady', async () => {
   console.log(`Logged in as ${client.user.tag}`);
   console.log('Bot is ready to roast some CS2 players!');
-  client.user.setActivity('CS2 players', { type: 'WATCHING' });
+  client.user.setActivity('CS2 players', { type: ActivityType.Watching });
 
   // Detect new guilds that joined while bot was offline
   console.log('[STARTUP] Checking for new guilds joined while offline...');
@@ -138,14 +138,28 @@ client.once('clientReady', async () => {
       console.log(`  - ${guild.name} (${guild.id})`);
     }
 
-    // Deploy commands to new guilds
-    for (const guild of newGuilds) {
-      console.log(`[STARTUP] Deploying commands to new guild: ${guild.name}`);
-      const success = await deployCommandsToGuild(guild.id);
-      if (success) {
-        markCommandsDeployed(guild.id);
-      }
-    }
+    // Deploy commands to new guilds in parallel
+    console.log(`[STARTUP] Deploying commands to ${newGuilds.length} new guild(s) in parallel...`);
+    const deploymentPromises = newGuilds.map(guild =>
+      deployCommandsToGuild(guild.id)
+        .then(success => {
+          if (success) {
+            markCommandsDeployed(guild.id);
+            console.log(`[STARTUP] Successfully deployed commands to ${guild.name}`);
+          } else {
+            console.error(`[STARTUP] Failed to deploy commands to ${guild.name}`);
+          }
+          return { guild, success };
+        })
+        .catch(error => {
+          console.error(`[STARTUP] Error deploying to ${guild.name}:`, error);
+          return { guild, success: false, error };
+        }),
+    );
+
+    const results = await Promise.allSettled(deploymentPromises);
+    const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+    console.log(`[STARTUP] Command deployment complete: ${successCount}/${newGuilds.length} successful`);
   } else {
     console.log('[STARTUP] No new guilds detected.');
   }

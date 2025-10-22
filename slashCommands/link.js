@@ -47,7 +47,11 @@ module.exports = {
         const embed = new EmbedBuilder()
           .setColor('#ff0000')
           .setTitle('Permission Denied')
-          .setDescription('Only administrators can link other users!\nYou can only link yourself.');
+          .setDescription('Only administrators can link other users!')
+          .addFields({
+            name: 'What you can do',
+            value: 'You can only link yourself using `/link steam64_id:YOUR_ID`',
+          });
         return interaction.reply({ embeds: [embed], flags: [MessageFlags.Ephemeral] });
       }
       targetUser = mentionedUser;
