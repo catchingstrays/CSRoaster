@@ -430,7 +430,12 @@ class MatchTracker {
 
           console.log(`[DM] Sent roast to ${playerName} via DM`);
         } catch (error) {
-          console.log(`[DM] Failed to send roast to ${playerName}: ${error.message}`);
+          // Discord error code 50007 = Cannot send messages to this user (DMs disabled or bot blocked)
+          if (error.code === 50007) {
+            console.log(`[DM] User ${playerName} has DMs disabled or blocked bot`);
+          } else {
+            console.log(`[DM] Failed to send roast to ${playerName}: ${error.message} (code: ${error.code || 'unknown'})`);
+          }
           // Continue to guild notifications even if DM fails
         }
       }
@@ -440,7 +445,8 @@ class MatchTracker {
       const hasGuilds = userData && userData.guilds && userData.guilds.length > 0;
 
       if (!hasGuilds) {
-        console.log(`User ${discordUserId} has no guild associations (DM-only user)`);
+        const dmStatus = isDMRoastsEnabled(discordUserId) ? '(DM sent)' : '(no DM enabled)';
+        console.log(`User ${discordUserId} has no guild associations ${dmStatus}`);
         return; // Exit if no guilds (DM was already sent above if enabled)
       }
 

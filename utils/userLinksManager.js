@@ -4,6 +4,19 @@ const { enableDMRoasts } = require('./userPreferencesManager');
 
 const USER_LINKS_PATH = path.join(__dirname, '../data/userLinks.json');
 
+// DM notification messages
+const DM_MESSAGES = {
+  SELF_LINK: '✅ **Account Linked Successfully!**\n\n' +
+             'You\'ll now receive roasts in DMs when new matches are detected.\n' +
+             'Use `/optout dm_roasts` to disable DM notifications.\n\n' +
+             '📊 Your stats are being tracked automatically.',
+  ADMIN_LINK: '✅ **Your CS2 Account Has Been Linked**\n\n' +
+              'A server admin has linked your account to track your matches.\n' +
+              'You\'ll receive roast notifications in DMs when new matches are detected.\n' +
+              'Use `/optout dm_roasts` to disable DM notifications.\n\n' +
+              '📊 Your stats are being tracked automatically.',
+};
+
 // Ensure data directory exists
 const dataDir = path.dirname(USER_LINKS_PATH);
 if (!fs.existsSync(dataDir)) {
@@ -88,11 +101,7 @@ async function linkUserToGuild(discordUserId, guildId, steam64Id, username, link
       try {
         const user = await client.users.fetch(discordUserId);
         await user.send({
-          content: '✅ **Your CS2 Account Has Been Linked**\n\n' +
-                   'A server admin has linked your account to track your matches.\n' +
-                   'You\'ll receive roast notifications in DMs when new matches are detected.\n' +
-                   'Use `/optout dm_roasts` to disable DM notifications.\n\n' +
-                   '📊 Your stats are being tracked automatically.',
+          content: DM_MESSAGES.ADMIN_LINK,
         });
 
         // DM succeeded - enable DM roasts
@@ -269,10 +278,7 @@ async function linkUserGlobally(discordUserId, steam64Id, username, client = nul
     try {
       const user = await client.users.fetch(discordUserId);
       await user.send({
-        content: '✅ **Account Linked Successfully!**\n\n' +
-                 'You\'ll now receive roasts in DMs when new matches are detected.\n' +
-                 'Use `/optout dm_roasts` to disable DM notifications.\n\n' +
-                 '📊 Your stats are being tracked automatically.',
+        content: DM_MESSAGES.SELF_LINK,
       });
 
       // DM succeeded - enable DM roasts

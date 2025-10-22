@@ -61,6 +61,21 @@ If a server admin links your account, you'll only receive DMs if:
 
 Otherwise, you'll only be roasted in that server's channels.
 
+### Troubleshooting
+
+**Not receiving DMs?**
+
+1. Check your Discord settings:
+   - Settings → Privacy & Safety → Allow direct messages from server members
+2. Make sure you haven't blocked the bot
+3. Re-run `/link steam64_id:YOUR_ID` to test the DM connection
+4. If the bot says "DM notifications enabled" but you still don't receive them, check your message requests folder
+
+**Still having issues?**
+- DM notifications require the bot to be able to send you messages
+- Some users may have privacy settings that prevent bots from DMing them
+- You'll still receive roasts in server channels even if DMs don't work
+
 ## Commands
 
 ### Available Everywhere
