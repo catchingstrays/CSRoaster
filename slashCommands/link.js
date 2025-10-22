@@ -2,13 +2,19 @@ const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js'
 const leetifyApi = require('../services/leetifyApi');
 const cs2RoastGenerator = require('../utils/cs2RoastGenerator');
 const matchTracker = require('../services/matchTracker');
-const { loadUserLinks, linkUserToGuild, isUserLinkedInGuild } = require('../utils/userLinksManager');
+const {
+  linkUserToGuild,
+  linkUserGlobally,
+  isUserLinkedInGuild,
+  getUserSteam64Id,
+  loadUserLinks,
+} = require('../utils/userLinksManager');
 const { isGuildConfigured, getGuildConfig } = require('../utils/guildConfigManager');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('link')
-    .setDescription('Link a Discord user to their Steam64 ID')
+    .setDescription('Link your Discord account to your Steam64 ID')
     .addStringOption(option =>
       option
         .setName('steam64_id')
@@ -17,10 +23,120 @@ module.exports = {
     .addUserOption(option =>
       option
         .setName('user')
-        .setDescription('(Admin only) User to link')
+        .setDescription('(Admin only, Guild only) User to link')
         .setRequired(false)),
 
+  // Mark as user-installable (works in DMs and guilds)
+  userInstallable: true,
+  guildOnly: false,
+
   async execute(interaction) {
+    const isGuildContext = !!interaction.guild;
+    const steam64Id = interaction.options.getString('steam64_id');
+    const mentionedUser = interaction.options.getUser('user');
+
+    // Validate Steam64 ID format
+    if (!/^7656119\d{10}$/.test(steam64Id)) {
+      const embed = new EmbedBuilder()
+        .setColor('#ff0000')
+        .setTitle('Invalid Steam64 ID')
+        .setDescription('The Steam64 ID should be a 17-digit number starting with 7656119.')
+        .addFields({ name: 'Find your Steam64 ID', value: '[steamid.io](https://steamid.io/)' });
+      return interaction.reply({ embeds: [embed], flags: [MessageFlags.Ephemeral] });
+    }
+
+    // Route to appropriate handler
+    if (!isGuildContext) {
+      return this.handleGlobalLink(interaction, steam64Id);
+    }
+    return this.handleGuildLink(interaction, steam64Id, mentionedUser);
+  },
+
+  async handleGlobalLink(interaction, steam64Id) {
+    const targetUser = interaction.user;
+
+    // Defer reply as this will take some time
+    await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+
+    // Check if already linked globally
+    const existingSteam64 = getUserSteam64Id(targetUser.id);
+
+    if (existingSteam64) {
+      if (existingSteam64 === steam64Id) {
+        const embed = new EmbedBuilder()
+          .setColor('#00ff00')
+          .setTitle('Already Linked')
+          .setDescription(`You're already linked to Steam64 ID: \`${steam64Id}\``)
+          .addFields({
+            name: 'Use in servers',
+            value: 'You can now use commands in any server where this bot is installed!',
+          });
+        return interaction.editReply({ embeds: [embed] });
+      } else {
+        // Update Steam64 ID
+        linkUserGlobally(targetUser.id, steam64Id, targetUser.username);
+        const embed = new EmbedBuilder()
+          .setColor('#00ff00')
+          .setTitle('Link Updated')
+          .setDescription(`Updated your Steam64 ID from \`${existingSteam64}\` to \`${steam64Id}\``);
+        return interaction.editReply({ embeds: [embed] });
+      }
+    }
+
+    // Link user globally
+    if (!linkUserGlobally(targetUser.id, steam64Id, targetUser.username)) {
+      const embed = new EmbedBuilder()
+        .setColor('#ff0000')
+        .setTitle('Error')
+        .setDescription('Failed to save the link. Please try again.');
+      return interaction.editReply({ embeds: [embed] });
+    }
+
+    // Fetch stats to verify the link works
+    try {
+      const profileData = await leetifyApi.getProfile(steam64Id);
+      const stats = cs2RoastGenerator.calculateStatsFromProfile(profileData);
+      const playerName = profileData.name || 'Unknown Player';
+      const currentMatchCount = profileData.total_matches || 0;
+
+      // Initialize tracking for this user immediately
+      matchTracker.trackedUsers[targetUser.id] = {
+        steam64Id: steam64Id,
+        lastMatchCount: currentMatchCount,
+        lastChecked: new Date().toISOString(),
+        lastStats: stats,
+        lastMatchUpdate: null, // No cooldown on initial link
+      };
+      matchTracker.saveTrackerData();
+
+      const successEmbed = new EmbedBuilder()
+        .setColor('#00ff00')
+        .setTitle('Global Link Successful')
+        .setDescription(`Successfully linked your account to Steam64 ID: \`${steam64Id}\``)
+        .addFields(
+          { name: 'Player', value: playerName },
+          { name: 'Matches Tracked', value: currentMatchCount.toString() },
+          { name: 'Available Commands', value: '`/stats` - View your stats\n`/roast` - Get instant roasts\n`/tracker check` - Check for new matches' },
+          { name: 'Note', value: 'Automatic roasting only works in servers where the bot is configured.' },
+        );
+      await interaction.editReply({ embeds: [successEmbed] });
+
+      console.log(`[LINK GLOBAL] Linked ${targetUser.username} (${targetUser.id}) globally - ${currentMatchCount} matches`);
+    } catch (error) {
+      console.error('Error fetching stats for global link:', error);
+      const errorEmbed = new EmbedBuilder()
+        .setColor('#ff9900')
+        .setTitle('Link Successful (Stats Error)')
+        .setDescription(`Successfully linked your account to Steam64 ID: \`${steam64Id}\``)
+        .addFields(
+          { name: 'Error', value: error.message },
+          { name: 'Status', value: 'Link saved. You can try using commands now.' },
+        );
+      await interaction.editReply({ embeds: [errorEmbed] });
+    }
+  },
+
+  async handleGuildLink(interaction, steam64Id, mentionedUser) {
     // Check if guild is configured
     if (!isGuildConfigured(interaction.guild.id)) {
       const embed = new EmbedBuilder()
@@ -36,8 +152,6 @@ module.exports = {
 
     // Check if user has Administrator permission in this server
     const isAdmin = interaction.member.permissions.has('Administrator');
-    const mentionedUser = interaction.options.getUser('user');
-    const steam64Id = interaction.options.getString('steam64_id');
 
     // Determine target user
     let targetUser;
@@ -58,16 +172,6 @@ module.exports = {
     } else {
       // No mention - user linking themselves
       targetUser = interaction.user;
-    }
-
-    // Validate Steam64 ID format
-    if (!/^7656119\d{10}$/.test(steam64Id)) {
-      const embed = new EmbedBuilder()
-        .setColor('#ff0000')
-        .setTitle('Invalid Steam64 ID')
-        .setDescription('The Steam64 ID should be a 17-digit number starting with 7656119.')
-        .addFields({ name: 'Find your Steam64 ID', value: '[steamid.io](https://steamid.io/)' });
-      return interaction.reply({ embeds: [embed], flags: [MessageFlags.Ephemeral] });
     }
 
     // Check if user is already linked in this guild

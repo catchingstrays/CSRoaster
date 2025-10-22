@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const matchTracker = require('../services/matchTracker');
-const { getUsersInGuild } = require('../utils/userLinksManager');
+const { getUsersInGuild, getUserSteam64Id } = require('../utils/userLinksManager');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -19,6 +19,10 @@ module.exports = {
             .setName('user')
             .setDescription('The user to check (defaults to yourself)')
             .setRequired(false))),
+
+  // Mark as user-installable (works in DMs and guilds)
+  userInstallable: true,
+  guildOnly: false,
 
   async execute(interaction) {
     const subcommand = interaction.options.getSubcommand();
@@ -47,6 +51,19 @@ module.exports = {
   },
 
   async showStatus(interaction) {
+    // Guild-only command
+    if (!interaction.guild) {
+      const embed = new EmbedBuilder()
+        .setColor('#ff9900')
+        .setTitle('Server Only')
+        .setDescription('This command only works in servers!')
+        .addFields({
+          name: 'Available in DMs',
+          value: 'Use `/tracker check` to check for new matches.',
+        });
+      return interaction.reply({ embeds: [embed], flags: [MessageFlags.Ephemeral] });
+    }
+
     const status = matchTracker.getTrackingStatus();
     const guildUsers = getUsersInGuild(interaction.guild.id);
     const guildUserCount = Object.keys(guildUsers).length;
@@ -102,19 +119,37 @@ module.exports = {
   },
 
   async manualCheck(interaction) {
+    const isGuildContext = !!interaction.guild;
     const mentionedUser = interaction.options.getUser('user');
     const targetUser = mentionedUser || interaction.user;
     const targetUserId = targetUser.id;
 
-    const guildUsers = getUsersInGuild(interaction.guild.id);
-    const linkData = guildUsers[targetUserId];
-
-    if (!linkData) {
-      const embed = new EmbedBuilder()
-        .setColor('#ff0000')
-        .setTitle('User Not Linked')
-        .setDescription('This user is not linked in this server! Use `/link` first.');
-      return interaction.reply({ embeds: [embed], flags: [MessageFlags.Ephemeral] });
+    // Check if user is linked (works for both global and guild links)
+    let steam64Id;
+    if (isGuildContext) {
+      const guildUsers = getUsersInGuild(interaction.guild.id);
+      const linkData = guildUsers[targetUserId];
+      if (!linkData) {
+        const embed = new EmbedBuilder()
+          .setColor('#ff0000')
+          .setTitle('User Not Linked')
+          .setDescription('This user is not linked in this server! Use `/link` first.');
+        return interaction.reply({ embeds: [embed], flags: [MessageFlags.Ephemeral] });
+      }
+      steam64Id = linkData.steam64Id;
+    } else {
+      steam64Id = getUserSteam64Id(targetUserId);
+      if (!steam64Id) {
+        const embed = new EmbedBuilder()
+          .setColor('#ff0000')
+          .setTitle('Not Linked')
+          .setDescription('You need to link your account first! Use `/link steam64_id:YOUR_ID`')
+          .addFields({
+            name: 'Find your Steam64 ID',
+            value: '[steamid.io](https://steamid.io/)',
+          });
+        return interaction.reply({ embeds: [embed], flags: [MessageFlags.Ephemeral] });
+      }
     }
 
     // Check if user is in cooldown
@@ -126,7 +161,7 @@ module.exports = {
       const embed = new EmbedBuilder()
         .setColor('#ff9900')
         .setTitle('User in Cooldown')
-        .setDescription(`<@${targetUserId}> is on cooldown for ${hours}h ${minutes}m.`)
+        .setDescription(`${isGuildContext ? `<@${targetUserId}>` : 'You'} ${isGuildContext ? 'is' : 'are'} on cooldown for ${hours}h ${minutes}m.`)
         .addFields(
           { name: 'Reason', value: 'This prevents spamming the API after a match is detected.' },
           { name: 'Reset', value: 'Cooldown resets 3 hours after each new match.' },
@@ -142,7 +177,7 @@ module.exports = {
       const successEmbed = new EmbedBuilder()
         .setColor('#00ff00')
         .setTitle('Check Complete')
-        .setDescription(`Check complete for <@${targetUserId}>!`);
+        .setDescription(`Check complete for ${isGuildContext ? `<@${targetUserId}>` : 'you'}!`);
       await interaction.editReply({ embeds: [successEmbed] });
     } catch (error) {
       const errorEmbed = new EmbedBuilder()

@@ -6,7 +6,8 @@ const config = require('./config');
 const matchTracker = require('./services/matchTracker');
 const { deleteGuildConfig } = require('./utils/guildConfigManager');
 const { removeGuildFromAllUsers } = require('./utils/userLinksManager');
-const { deployCommandsToGuild, removeCommandsFromGuild } = require('./utils/commandDeployer');
+const { removeCommandsFromGuild } = require('./utils/commandDeployer');
+const { deployGlobalCommands } = require('./utils/globalCommandDeployer');
 const {
   trackGuild,
   markCommandsDeployed,
@@ -128,6 +129,15 @@ client.once('clientReady', async () => {
   console.log('Bot is ready to roast some CS2 players!');
   client.user.setActivity('CS2 players', { type: ActivityType.Watching });
 
+  // Deploy commands globally with user install support
+  console.log('[STARTUP] Deploying global commands...');
+  const success = await deployGlobalCommands();
+  if (success) {
+    console.log('[STARTUP] Global commands deployed successfully');
+  } else {
+    console.error('[STARTUP] Failed to deploy global commands');
+  }
+
   // Detect new guilds that joined while bot was offline
   console.log('[STARTUP] Checking for new guilds joined while offline...');
   const newGuilds = await detectNewGuilds(client);
@@ -137,29 +147,11 @@ client.once('clientReady', async () => {
     for (const guild of newGuilds) {
       console.log(`  - ${guild.name} (${guild.id})`);
     }
-
-    // Deploy commands to new guilds in parallel
-    console.log(`[STARTUP] Deploying commands to ${newGuilds.length} new guild(s) in parallel...`);
-    const deploymentPromises = newGuilds.map(guild =>
-      deployCommandsToGuild(guild.id)
-        .then(success => {
-          if (success) {
-            markCommandsDeployed(guild.id);
-            console.log(`[STARTUP] Successfully deployed commands to ${guild.name}`);
-          } else {
-            console.error(`[STARTUP] Failed to deploy commands to ${guild.name}`);
-          }
-          return { guild, success };
-        })
-        .catch(error => {
-          console.error(`[STARTUP] Error deploying to ${guild.name}:`, error);
-          return { guild, success: false, error };
-        }),
-    );
-
-    const results = await Promise.allSettled(deploymentPromises);
-    const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
-    console.log(`[STARTUP] Command deployment complete: ${successCount}/${newGuilds.length} successful`);
+    // Note: Commands are now deployed globally, so no per-guild deployment needed
+    // Just mark them as detected for tracking purposes
+    for (const guild of newGuilds) {
+      markCommandsDeployed(guild.id);
+    }
   } else {
     console.log('[STARTUP] No new guilds detected.');
   }
@@ -209,19 +201,12 @@ client.on('guildCreate', async (guild) => {
   // Track the guild
   trackGuild(guild.id, guild.name, true);
 
-  // Deploy slash commands to the new guild
-  console.log(`[GUILD JOIN] Deploying slash commands to ${guild.name}...`);
-  const success = await deployCommandsToGuild(guild.id);
+  // Note: Commands are deployed globally, no per-guild deployment needed
+  markCommandsDeployed(guild.id);
+  console.log('[GUILD JOIN] Guild tracked. Commands are available globally.');
 
-  if (success) {
-    markCommandsDeployed(guild.id);
-    console.log(`[GUILD JOIN] Commands deployed successfully to ${guild.name}`);
-
-    // Send onboarding message
-    await sendOnboardingMessage(guild);
-  } else {
-    console.error(`[GUILD JOIN] Failed to deploy commands to ${guild.name}`);
-  }
+  // Send onboarding message
+  await sendOnboardingMessage(guild);
 });
 
 // Handle bot being removed from a guild

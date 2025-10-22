@@ -20,7 +20,19 @@ module.exports = {
         .setName('status')
         .setDescription('View current setup configuration')),
 
+  // Mark as guild-only (explicitly disable user install)
+  userInstallable: false,
+  guildOnly: true,
+
   async execute(interaction) {
+    // Ensure this command only works in guilds
+    if (!interaction.guild) {
+      return interaction.reply({
+        content: 'This command can only be used in servers!',
+        flags: [MessageFlags.Ephemeral],
+      });
+    }
+
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === 'status') {

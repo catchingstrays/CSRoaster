@@ -176,6 +176,71 @@ function getUserGuilds(discordUserId) {
   return userData.guilds;
 }
 
+/**
+ * Link a user globally (no guild association)
+ * Used for user-install context (DMs)
+ * @param {string} discordUserId - Discord user ID
+ * @param {string} steam64Id - Steam64 ID
+ * @param {string} username - Discord username
+ * @returns {boolean} Success status
+ */
+function linkUserGlobally(discordUserId, steam64Id, username) {
+  const userLinks = loadUserLinks();
+
+  // Initialize user data if not exists
+  if (!userLinks[discordUserId]) {
+    userLinks[discordUserId] = {
+      steam64Id: steam64Id,
+      username: username,
+      guilds: [],
+      linkedAt: new Date().toISOString(),
+      linkedBy: discordUserId, // Self-linked in DM
+      globalLink: true,
+    };
+  } else {
+    // Update existing user data
+    userLinks[discordUserId].steam64Id = steam64Id;
+    userLinks[discordUserId].username = username;
+    userLinks[discordUserId].globalLink = true;
+    userLinks[discordUserId].globalLinkedAt = new Date().toISOString();
+  }
+
+  return saveUserLinks(userLinks);
+}
+
+/**
+ * Check if a user has a global link
+ * @param {string} discordUserId - Discord user ID
+ * @returns {boolean} Whether user has global link
+ */
+function isUserLinkedGlobally(discordUserId) {
+  const userLinks = loadUserLinks();
+  const userData = userLinks[discordUserId];
+
+  if (!userData) {
+    return false;
+  }
+
+  // User is globally linked if they have globalLink flag OR have a steam64Id
+  return userData.globalLink === true || !!userData.steam64Id;
+}
+
+/**
+ * Get user's Steam64 ID (works for both global and guild links)
+ * @param {string} discordUserId - Discord user ID
+ * @returns {string|null} Steam64 ID or null if not linked
+ */
+function getUserSteam64Id(discordUserId) {
+  const userLinks = loadUserLinks();
+  const userData = userLinks[discordUserId];
+
+  if (!userData) {
+    return null;
+  }
+
+  return userData.steam64Id || null;
+}
+
 module.exports = {
   loadUserLinks,
   saveUserLinks,
@@ -185,4 +250,7 @@ module.exports = {
   getUsersInGuild,
   isUserLinkedInGuild,
   getUserGuilds,
+  linkUserGlobally,
+  isUserLinkedGlobally,
+  getUserSteam64Id,
 };
