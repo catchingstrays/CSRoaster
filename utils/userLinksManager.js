@@ -89,7 +89,7 @@ async function linkUserToGuild(discordUserId, guildId, steam64Id, username, link
         const user = await client.users.fetch(discordUserId);
         await user.send({
           content: '✅ **Your CS2 Account Has Been Linked**\n\n' +
-                   `A server admin has linked your account to track your matches.\n` +
+                   'A server admin has linked your account to track your matches.\n' +
                    'You\'ll receive roast notifications in DMs when new matches are detected.\n' +
                    'Use `/optout dm_roasts` to disable DM notifications.\n\n' +
                    '📊 Your stats are being tracked automatically.',
